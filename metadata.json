@@ -1,0 +1,7 @@
+{
+  "name": "MedIntelliCare AI",
+  "description": "An AI-first healthcare SaaS platform digitizing pharmacy and doctor operations with Gemini clinical intelligence.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
