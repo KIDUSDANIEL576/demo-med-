@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { UserRole } from '../types';
+import { LogIn, Mail, Lock, Sparkles, Pill, ArrowRight } from 'lucide-react';
+import { motion } from 'motion/react';
 
 const Login = () => {
   const { login } = useAuth();
@@ -33,74 +35,97 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary to-secondary/70 p-4 relative">
-      <div className="w-full max-w-md bg-white/30 backdrop-blur-xl rounded-2xl shadow-2xl p-8 animate-fade-in">
-        <h1 className="text-4xl font-bold text-center text-white mb-2">MedIntelliCare</h1>
-        <p className="text-center text-white/90 mb-8">Digitizing Healthcare, One Click at a Time.</p>
+    <div className="min-h-screen flex items-center justify-center bg-[#FDFDFD] p-6 relative overflow-hidden">
+      {/* Background Accents */}
+      <div className="absolute top-0 left-0 w-full h-full bg-primary/5 blur-[120px] rounded-full -z-10 translate-x-[-20%] translate-y-[-20%]" />
+      <div className="absolute bottom-0 right-0 w-full h-full bg-secondary/5 blur-[120px] rounded-full -z-10 translate-x-[20%] translate-y-[20%]" />
 
-        <form onSubmit={handleLogin} className="space-y-6">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md bg-white rounded-[3rem] shadow-2xl p-12 border border-slate-100 relative overflow-hidden"
+      >
+        <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full -mr-20 -mt-20" />
+        
+        <div className="text-center mb-12 space-y-4">
+          <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center text-white mx-auto shadow-xl shadow-primary/20">
+            <Pill className="w-8 h-8" />
+          </div>
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-white/90">
-              Email Address
-            </label>
-            <div className="mt-1">
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="appearance-none block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm"
-              />
+            <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">MedIntelliCare</h1>
+            <p className="text-slate-400 font-medium mt-1">Professional Healthcare Portal</p>
+          </div>
+        </div>
+
+        <form onSubmit={handleLogin} className="space-y-8">
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-2">Email Address</label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full p-5 pl-12 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-bold text-slate-800"
+                  placeholder="name@pharmacy.com"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-2">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full p-5 pl-12 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-bold text-slate-800"
+                  placeholder="••••••••"
+                />
+              </div>
             </div>
           </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-white/90">
-              Password
-            </label>
-            <div className="mt-1">
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm"
-              />
-            </div>
-          </div>
-
-          {error && <p className="text-sm text-center text-red-200 bg-red-800/50 p-2 rounded-md">{error}</p>}
-
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-bold text-primary bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white transition duration-300 transform hover:scale-105 disabled:bg-gray-200 disabled:cursor-not-allowed"
+          {error && (
+            <motion.p 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-red-500 text-sm font-bold text-center bg-red-50 p-4 rounded-2xl border border-red-100"
             >
-              {loading ? 'Logging in...' : 'Login'}
-            </button>
-          </div>
+              {error}
+            </motion.p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-5 bg-primary text-white font-bold rounded-2xl hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 active:scale-95 disabled:bg-slate-200 text-lg flex items-center justify-center gap-3"
+          >
+            {loading ? 'Authenticating...' : 'Sign In'}
+            {!loading && <ArrowRight className="w-5 h-5" />}
+          </button>
         </form>
 
-        <div className="mt-8 text-center pt-6 border-t border-white/20">
-            <p className="text-white/80 text-sm mb-3 font-medium">Looking for medicine?</p>
+        <div className="mt-12 pt-8 border-t border-slate-50 text-center space-y-6">
+          <div className="text-sm">
+            <span className="text-slate-400 font-medium">Looking for medicine? </span>
             <Link 
-                to="/patient-signup" 
-                className="inline-block w-full py-2 bg-indigo-500 text-white rounded-md font-bold shadow hover:bg-indigo-600 transition-colors"
+              to="/patient-signup" 
+              className="text-primary font-bold hover:underline uppercase tracking-tighter"
             >
-                Patient Registration
+              Patient Access
             </Link>
+          </div>
+          <div className="flex items-center justify-center gap-2 text-[10px] font-bold text-slate-300 uppercase tracking-widest">
+            <Sparkles className="w-3 h-3" />
+            Powered by DigiraftHub
+          </div>
         </div>
-      </div>
-      <div className="absolute bottom-4 right-4 text-white/70 text-sm">
-        in partnership with DigiraftHub
-      </div>
+      </motion.div>
     </div>
   );
 };

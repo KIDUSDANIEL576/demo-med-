@@ -4,7 +4,8 @@ import DataTable from '../../components/DataTable';
 import { getStaff, addStaff, updateStaff } from '../../services/mockApi';
 import { User, UserRole } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
-import { UserPlusIcon, PencilIcon } from '../../constants';
+import { UserPlus, Pencil, Shield, Mail, Lock, CheckCircle2, X, Users } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 const StaffManagement: React.FC = () => {
     const { user } = useAuth();
@@ -44,7 +45,7 @@ const StaffManagement: React.FC = () => {
         setName(staffMember.name);
         setEmail(staffMember.email);
         setRole(staffMember.role);
-        setPassword(''); // Leave blank unless changing
+        setPassword(''); 
         setIsModalOpen(true);
     };
 
@@ -54,19 +55,17 @@ const StaffManagement: React.FC = () => {
 
         try {
             if (editingStaff) {
-                // Update Existing
                 const updatedUser = await updateStaff(editingStaff.id, {
                     name,
                     email,
                     role,
-                    password: password || undefined // Only send if changed
+                    password: password || undefined 
                 });
                 setStaff(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
                 if (password) {
                     setCreatedCredentials({ email: updatedUser.email, password: password });
                 }
             } else {
-                // Create New
                 const result = await addStaff({
                     name,
                     email,
@@ -84,99 +83,200 @@ const StaffManagement: React.FC = () => {
     };
 
     const columns = [
-        { key: 'name', header: 'Name' },
+        { key: 'name', header: 'Staff Member' },
         { key: 'email', header: 'Email' },
         { key: 'role', header: 'Role' },
-        { key: 'lastLogin', header: 'Last Login' },
+        { key: 'lastLogin', header: 'Last Access' },
         { key: 'actions', header: 'Actions' },
     ];
 
     return (
-        <div className="space-y-6 animate-fade-in">
-             <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold text-slate-800">Staff Management</h1>
-                <button onClick={handleOpenAdd} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90">
-                    <UserPlusIcon /> Add New Staff
+        <div className="space-y-10">
+            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+                <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-[0.2em]">
+                        <Users className="w-4 h-4" />
+                        Human Resources
+                    </div>
+                    <h1 className="text-5xl font-black text-slate-900 tracking-tighter uppercase">Staff Directory</h1>
+                    <p className="text-slate-400 font-medium text-lg">Manage permissions and credentials for your clinical team.</p>
+                </div>
+
+                <button 
+                    onClick={handleOpenAdd} 
+                    className="flex items-center gap-3 px-8 py-4 bg-primary text-white rounded-2xl hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 font-bold text-sm uppercase tracking-widest"
+                >
+                    <UserPlus className="w-5 h-5" />
+                    Add New Staff
                 </button>
             </div>
 
-            {createdCredentials && (
-                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
-                    <strong className="font-bold">{editingStaff ? 'Credentials Updated! ' : 'Staff Created! '}</strong>
-                    <span className="block sm:inline">Username: <strong>{createdCredentials.email}</strong> / Password: <strong>{createdCredentials.password}</strong></span>
-                    <button onClick={() => setCreatedCredentials(null)} className="absolute top-0 bottom-0 right-0 px-4 py-3">
-                        <span className="text-green-500">x</span>
-                    </button>
-                </div>
-            )}
+            <AnimatePresence>
+                {createdCredentials && (
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="bg-emerald-500 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden"
+                    >
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
+                        <div className="flex items-center justify-between relative z-10">
+                            <div className="flex items-center gap-6">
+                                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                                    <CheckCircle2 className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-black uppercase tracking-widest opacity-80 mb-1">
+                                        {editingStaff ? 'Credentials Updated' : 'Staff Member Created'}
+                                    </p>
+                                    <p className="text-lg font-bold">
+                                        User: <span className="font-mono bg-white/10 px-2 py-1 rounded">{createdCredentials.email}</span> 
+                                        <span className="mx-4 opacity-50">|</span>
+                                        Pass: <span className="font-mono bg-white/10 px-2 py-1 rounded">{createdCredentials.password}</span>
+                                    </p>
+                                </div>
+                            </div>
+                            <button onClick={() => setCreatedCredentials(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <DataTable<User>
                 columns={columns}
                 data={staff}
                 renderRow={(u) => (
-                    <tr key={u.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{u.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{u.email}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${u.role === UserRole.PHARMACIST ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
+                    <>
+                        <td className="px-8 py-6 whitespace-nowrap">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 font-black uppercase">
+                                    {u.name.charAt(0)}
+                                </div>
+                                <span className="text-sm font-black text-slate-900">{u.name}</span>
+                            </div>
+                        </td>
+                        <td className="px-8 py-6 whitespace-nowrap text-sm font-medium text-slate-500">{u.email}</td>
+                        <td className="px-8 py-6 whitespace-nowrap">
+                            <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${
+                                u.role === UserRole.PHARMACIST ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-sky-50 text-sky-600 border border-sky-100'
+                            }`}>
                                 {u.role}
                             </span>
                         </td>
-                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{u.lastLogin}</td>
-                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button onClick={() => handleOpenEdit(u)} className="text-primary hover:text-primary/80" title="Edit Credentials">
-                                <PencilIcon />
+                         <td className="px-8 py-6 whitespace-nowrap text-xs font-mono text-slate-400">{u.lastLogin || 'Never'}</td>
+                         <td className="px-8 py-6 whitespace-nowrap">
+                            <button onClick={() => handleOpenEdit(u)} className="p-2 hover:bg-white rounded-xl text-slate-400 hover:text-primary transition-all hover:shadow-md">
+                                <Pencil className="w-4 h-4" />
                             </button>
                         </td>
-                    </tr>
+                    </>
                 )}
             />
 
-            {isModalOpen && (
-                 <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 animate-fade-in">
-                    <div className="bg-base-300 p-8 rounded-lg shadow-2xl w-full max-w-md">
-                        <h2 className="text-2xl font-bold mb-4">{editingStaff ? 'Edit Staff Credentials' : 'Add New Staff'}</h2>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700">Full Name</label>
-                                <input value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700">Email (Username)</label>
-                                <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700">Role</label>
-                                <select value={role} onChange={e => setRole(e.target.value as UserRole)} className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
-                                    <option value={UserRole.PHARMACIST}>Pharmacist</option>
-                                    <option value={UserRole.SALES}>Sales Person</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700">
-                                    {editingStaff ? 'New Password (Optional)' : 'Password'}
-                                </label>
-                                <input 
-                                    type="text" 
-                                    value={password} 
-                                    onChange={e => setPassword(e.target.value)} 
-                                    placeholder={editingStaff ? "Leave blank to keep current" : "Enter password"}
-                                    required={!editingStaff}
-                                    className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary" 
-                                />
-                                {editingStaff && <p className="text-xs text-slate-500 mt-1">Enter a new password only if you wish to reset it.</p>}
+            <AnimatePresence>
+                {isModalOpen && (
+                    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex justify-center items-center z-50 p-6">
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="bg-white rounded-[3rem] shadow-2xl p-12 w-full max-w-lg relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full -mr-20 -mt-20" />
+                            
+                            <button onClick={() => setIsModalOpen(false)} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 transition-colors">
+                                <X className="w-8 h-8" />
+                            </button>
+
+                            <div className="text-center mb-10 space-y-4">
+                                <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">
+                                    {editingStaff ? 'Edit Staff Member' : 'Add New Staff'}
+                                </h2>
+                                <p className="text-slate-400 font-medium">Configure account details and access levels.</p>
                             </div>
 
-                            <div className="flex justify-end gap-4 pt-4">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-gray-200 rounded">Cancel</button>
-                                <button type="submit" className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90">
-                                    {editingStaff ? 'Update Staff' : 'Create Staff'}
-                                </button>
-                            </div>
-                        </form>
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Full Name</label>
+                                    <div className="relative">
+                                        <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                                        <input 
+                                            value={name} 
+                                            onChange={e => setName(e.target.value)} 
+                                            required 
+                                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold text-slate-700" 
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Email Address</label>
+                                    <div className="relative">
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                                        <input 
+                                            type="email" 
+                                            value={email} 
+                                            onChange={e => setEmail(e.target.value)} 
+                                            required 
+                                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold text-slate-700" 
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">Role & Permissions</label>
+                                    <div className="relative">
+                                        <Shield className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                                        <select 
+                                            value={role} 
+                                            onChange={e => setRole(e.target.value as UserRole)} 
+                                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold text-slate-700 appearance-none"
+                                        >
+                                            <option value={UserRole.PHARMACIST}>Pharmacist</option>
+                                            <option value={UserRole.SALES}>Sales Associate</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">
+                                        {editingStaff ? 'New Password (Optional)' : 'Secure Password'}
+                                    </label>
+                                    <div className="relative">
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                                        <input 
+                                            type="text" 
+                                            value={password} 
+                                            onChange={e => setPassword(e.target.value)} 
+                                            placeholder={editingStaff ? "••••••••" : "Enter password"}
+                                            required={!editingStaff}
+                                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold text-slate-700" 
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-4 pt-4">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setIsModalOpen(false)} 
+                                        className="flex-1 py-4 bg-slate-100 text-slate-500 font-bold rounded-2xl hover:bg-slate-200 transition-all uppercase text-xs tracking-widest"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button 
+                                        type="submit" 
+                                        className="flex-1 py-4 bg-primary text-white font-bold rounded-2xl hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 uppercase text-xs tracking-widest"
+                                    >
+                                        {editingStaff ? 'Update Member' : 'Create Member'}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
                     </div>
-                </div>
-            )}
+                )}
+            </AnimatePresence>
         </div>
     );
 };

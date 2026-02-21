@@ -18,7 +18,7 @@ async function seedAdmin() {
 
   // 1. Check if user exists
   const { data: users } = await supabase.auth.admin.listUsers();
-  const existingUser = users.users.find(u => u.email === SUPER_ADMIN_EMAIL);
+  const existingUser = (users.users as any[]).find(u => u.email === SUPER_ADMIN_EMAIL);
 
   let userId;
 

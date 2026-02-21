@@ -1,9 +1,8 @@
 
 import React from 'react';
+import { motion } from 'motion/react';
 
 interface DataTableProps<T> {
-  // FIX: Changed `key` type from `keyof T | 'actions'` to `string` to simplify the component's props
-  // and resolve issues with TypeScript's generic type inference in consuming components.
   columns: { key: string; header: string }[];
   data: T[];
   renderRow: (item: T) => React.ReactNode;
@@ -12,37 +11,51 @@ interface DataTableProps<T> {
 const DataTable = <T extends { id: any }>(
   { columns, data, renderRow }: DataTableProps<T>
 ) => {
-  // Safety check for columns and data
   if (!columns || !Array.isArray(columns)) {
-      return <div className="p-4 text-slate-500 italic">Table configuration error: No columns defined.</div>;
+      return <div className="p-8 text-slate-400 italic font-medium text-center bg-slate-50 rounded-[2rem]">Table configuration error: No columns defined.</div>;
   }
 
   const safeData = Array.isArray(data) ? data : [];
 
   return (
-    <div className="bg-base-300 shadow-md rounded-lg overflow-hidden animate-fade-in">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-base-200">
-          <thead className="bg-base-200/50">
+    <div className="bg-white shadow-sm rounded-[2.5rem] border border-slate-100 overflow-hidden relative">
+      <div className="overflow-x-auto scrollbar-hide">
+        <table className="min-w-full divide-y divide-slate-50">
+          <thead className="bg-slate-50/50">
             <tr>
               {columns.map((col) => (
                 <th
                   key={String(col.key)}
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider"
+                  className="px-8 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]"
                 >
                   {col.header}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="bg-base-300 divide-y divide-base-200">
+          <tbody className="divide-y divide-slate-50">
             {safeData.length > 0 ? (
-                safeData.map(renderRow)
+                safeData.map((item, index) => (
+                  <motion.tr 
+                    key={item.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.03 }}
+                    className="hover:bg-slate-50/50 transition-colors"
+                  >
+                    {/* The actual row content is rendered by the parent via renderRow */}
+                    {/* We wrap it in a fragment to ensure it's valid JSX */}
+                    {renderRow(item)}
+                  </motion.tr>
+                ))
             ) : (
                 <tr>
-                    <td colSpan={columns.length} className="px-6 py-4 text-center text-slate-500">
-                        No data available.
+                    <td colSpan={columns.length} className="px-8 py-20 text-center">
+                        <div className="space-y-3">
+                          <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No records found</p>
+                          <p className="text-xs text-slate-300">Try adjusting your filters or search query</p>
+                        </div>
                     </td>
                 </tr>
             )}
@@ -54,3 +67,4 @@ const DataTable = <T extends { id: any }>(
 };
 
 export default DataTable;
+

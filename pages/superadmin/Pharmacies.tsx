@@ -3,11 +3,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import DataTable from '../../components/DataTable';
 import { getPharmacies, addPharmacy, updatePharmacy, deletePharmacy, getUsers, adminResetUserPassword } from '../../services/mockApi';
 import { Pharmacy, SubscriptionPlan, User, UserRole } from '../../types';
-import { UserPlusIcon, PencilIcon, TrashIcon, KeyIcon } from '../../constants';
+import { Building2, Plus, Pencil, Trash2, Key, Shield, Clock, Users, Search } from 'lucide-react';
 import PharmacyModal from '../../components/PharmacyModal';
 import CreateAdminModal from '../../components/CreateAdminModal';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { useAuth } from '../../hooks/useAuth';
+import { motion, AnimatePresence } from 'motion/react';
 
 const getPlanStatus = (expiryDate: string) => {
     const today = new Date();
@@ -16,10 +17,10 @@ const getPlanStatus = (expiryDate: string) => {
     const diffTime = expiry.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    if (diffDays < 0) return { text: 'Expired', color: 'bg-red-200 text-red-800' };
-    if (diffDays <= 7) return { text: `Expires in ${diffDays}d`, color: 'bg-red-200 text-red-800' };
-    if (diffDays <= 30) return { text: 'Active', color: 'bg-amber-200 text-amber-800' };
-    return { text: 'Active', color: 'bg-green-200 text-green-800' };
+    if (diffDays < 0) return { text: 'Expired', color: 'bg-red-50 text-red-600 border-red-100' };
+    if (diffDays <= 7) return { text: `Expires in ${diffDays}d`, color: 'bg-red-50 text-red-600 border-red-100' };
+    if (diffDays <= 30) return { text: 'Active', color: 'bg-amber-50 text-amber-600 border-amber-100' };
+    return { text: 'Active', color: 'bg-emerald-50 text-emerald-600 border-emerald-100' };
 };
 
 const Pharmacies: React.FC = () => {
@@ -112,28 +113,40 @@ const Pharmacies: React.FC = () => {
     };
     
     const handleCredentialSave = () => {
-        fetchPharmacies(); // This re-fetches users as well
+        fetchPharmacies(); 
         setCredentialsModalOpen(false);
     }
 
     const columns = [
-        { key: 'name', header: 'Name' },
-        { key: 'plan', header: 'Plan' },
+        { key: 'name', header: 'Pharmacy Entity' },
+        { key: 'plan', header: 'Subscription' },
         { key: 'status', header: 'Status' },
         { key: 'staff', header: 'Staff' },
-        { key: 'createdAt', header: 'Date Added' },
-        { key: 'lastLogin', header: 'Last Login' },
+        { key: 'createdAt', header: 'Onboarding' },
         { key: 'actions', header: 'Actions' },
     ];
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Manage Pharmacies</h1>
-                <button type="button" onClick={handleAdd} className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all font-bold shadow-md">
-                    <UserPlusIcon /> Add New Pharmacy
+        <div className="space-y-12">
+            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+                <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-[0.2em]">
+                        <Building2 className="w-4 h-4" />
+                        Network Infrastructure
+                    </div>
+                    <h1 className="text-5xl font-black text-slate-900 tracking-tighter uppercase">Pharmacy Management</h1>
+                    <p className="text-slate-400 font-medium text-lg">Oversee and manage pharmacy partners across the global network.</p>
+                </div>
+
+                <button 
+                    onClick={handleAdd} 
+                    className="flex items-center gap-3 px-8 py-4 bg-primary text-white rounded-2xl hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 font-bold text-sm uppercase tracking-widest"
+                >
+                    <Plus className="w-5 h-5" />
+                    Register Pharmacy
                 </button>
             </div>
+
             <DataTable<Pharmacy>
                 columns={columns}
                 data={pharmacies}
@@ -141,38 +154,64 @@ const Pharmacies: React.FC = () => {
                     const status = getPlanStatus(pharmacy.planExpiryDate);
                     const hasAdmin = adminExistsForPharmacy.has(pharmacy.id);
                     return (
-                        <tr key={pharmacy.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm font-bold text-slate-900">{pharmacy.name}</div>
-                                <div className="text-xs text-slate-500 font-medium">{pharmacy.email}</div>
+                        <>
+                            <td className="px-8 py-6 whitespace-nowrap">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 font-black text-lg">
+                                        {pharmacy.name.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <div className="text-sm font-black text-slate-900">{pharmacy.name}</div>
+                                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{pharmacy.email}</div>
+                                    </div>
+                                </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-bold">{pharmacy.plan}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                <span className={`px-2 inline-flex text-xs leading-5 font-black uppercase rounded-full ${status.color}`}>
+                            <td className="px-8 py-6 whitespace-nowrap">
+                                <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${
+                                    pharmacy.plan === SubscriptionPlan.PLATINUM ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-50 text-slate-600 border-slate-100'
+                                }`}>
+                                    {pharmacy.plan}
+                                </span>
+                            </td>
+                            <td className="px-8 py-6 whitespace-nowrap">
+                                <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${status.color}`}>
                                     {status.text}
                                 </span>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 text-center font-bold">{pharmacy.staff}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-mono">{pharmacy.createdAt}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-mono">{pharmacy.lastLogin}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <div className="flex items-center gap-4">
-                                    <button type="button" onClick={() => handleEdit(pharmacy)} className="text-primary hover:text-primary/80 transition-transform active:scale-95" title="Edit"><PencilIcon /></button>
-                                    <button 
-                                        type="button"
-                                        onClick={() => hasAdmin ? handleResetPassword(pharmacy.id, pharmacy.name) : handleCreateCredentials(pharmacy)} 
-                                        className={hasAdmin ? "text-amber-600 hover:text-amber-800 transition-transform active:scale-95" : "text-green-600 hover:text-green-800 animate-pulse"}
-                                        title={hasAdmin ? "Reset Password" : "Create Login Credentials"}
-                                    >
-                                        <KeyIcon />
-                                    </button>
-                                    <button type="button" onClick={() => handleDeleteClick(pharmacy)} className="text-red-600 hover:text-red-800 transition-transform active:scale-95" title="Delete"><TrashIcon /></button>
+                            <td className="px-8 py-6 whitespace-nowrap">
+                                <div className="flex items-center gap-2 text-slate-500">
+                                    <Users className="w-4 h-4" />
+                                    <span className="text-sm font-black">{pharmacy.staff}</span>
                                 </div>
                             </td>
-                        </tr>
+                            <td className="px-8 py-6 whitespace-nowrap">
+                                <div className="flex items-center gap-2 text-slate-400">
+                                    <Clock className="w-4 h-4" />
+                                    <span className="text-xs font-mono">{pharmacy.createdAt}</span>
+                                </div>
+                            </td>
+                            <td className="px-8 py-6 whitespace-nowrap">
+                                <div className="flex items-center gap-2">
+                                    <button onClick={() => handleEdit(pharmacy)} className="p-2 hover:bg-white rounded-xl text-slate-400 hover:text-primary transition-all hover:shadow-md" title="Edit">
+                                        <Pencil className="w-4 h-4" />
+                                    </button>
+                                    <button 
+                                        onClick={() => hasAdmin ? handleResetPassword(pharmacy.id, pharmacy.name) : handleCreateCredentials(pharmacy)} 
+                                        className={`p-2 rounded-xl transition-all hover:shadow-md ${hasAdmin ? "text-slate-400 hover:text-amber-500" : "text-emerald-500 bg-emerald-50 animate-pulse"}`}
+                                        title={hasAdmin ? "Reset Password" : "Create Login Credentials"}
+                                    >
+                                        <Key className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={() => handleDeleteClick(pharmacy)} className="p-2 hover:bg-white rounded-xl text-slate-400 hover:text-red-500 transition-all hover:shadow-md" title="Delete">
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </td>
+                        </>
                     )
                 }}
             />
+
             {isModalOpen && (
                 <PharmacyModal
                     pharmacy={selectedPharmacy}

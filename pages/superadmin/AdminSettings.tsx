@@ -4,6 +4,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
 import { updateUserProfile, changePassword, getFeatureFlags } from '../../services/mockApi';
 import { FeatureFlag } from '../../types';
+import { Settings, User, Shield, Palette, Lock, CheckCircle2, AlertCircle, Upload, Image as ImageIcon, Globe, ToggleLeft, ToggleRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 const AdminSettings: React.FC = () => {
     const { user, setUser } = useAuth();
@@ -53,7 +55,7 @@ const AdminSettings: React.FC = () => {
         const file = e.target.files?.[0];
         if (file) {
             if (file.size > 5 * 1024 * 1024) { 
-                alert("File is too large. Please select an image under 5MB.");
+                showStatusMessage("File too large. Max 5MB.", 'error');
                 return;
             }
             const reader = new FileReader();
@@ -72,7 +74,7 @@ const AdminSettings: React.FC = () => {
         const file = e.target.files?.[0];
         if (file) {
              if (file.size > 2 * 1024 * 1024) { 
-                alert("File is too large. Please select an image under 2MB.");
+                showStatusMessage("File too large. Max 2MB.", 'error');
                 return;
             }
             const reader = new FileReader();
@@ -115,106 +117,254 @@ const AdminSettings: React.FC = () => {
     const toggleLocator = () => {
         setLocatorEnabled(!locatorEnabled);
         showStatusMessage(`Patient Locator ${!locatorEnabled ? 'Enabled' : 'Disabled'}`);
-        // In a real app, this would hit an API to update feature_flags table
     };
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 animate-fade-in pb-12">
-            <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold text-slate-800">Admin Settings</h1>
-                {statusMessage && (
-                    <div className={`px-4 py-2 rounded-md animate-fade-in ${statusType === 'success' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                        {statusMessage}
+        <div className="max-w-6xl mx-auto space-y-12 pb-20">
+            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+                <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-[0.2em]">
+                        <Shield className="w-4 h-4" />
+                        Global Administration
                     </div>
-                )}
+                    <h1 className="text-5xl font-black text-slate-900 tracking-tighter uppercase">Admin Settings</h1>
+                    <p className="text-slate-400 font-medium text-lg">Manage global platform identity, security, and feature flags.</p>
+                </div>
+
+                <AnimatePresence>
+                    {statusMessage && (
+                        <motion.div 
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            className={`flex items-center gap-3 px-6 py-4 rounded-2xl font-bold text-sm shadow-xl ${
+                                statusType === 'success' ? 'bg-emerald-500 text-white shadow-emerald-500/20' : 'bg-red-500 text-white shadow-red-500/20'
+                            }`}
+                        >
+                            {statusType === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+                            {statusMessage}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                <div className="space-y-8">
-                     <form onSubmit={handleProfileSave} className="bg-base-300 shadow-lg rounded-lg p-8">
-                        <h2 className="text-xl font-semibold text-slate-700 mb-6 border-b pb-4">Admin Profile</h2>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700">Display Name</label>
-                                <input value={name} onChange={e => setName(e.target.value)} required className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"/>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                <div className="lg:col-span-2 space-y-12">
+                    {/* Admin Profile */}
+                    <motion.form 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        onSubmit={handleProfileSave} 
+                        className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-sm space-y-10"
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
+                                <User className="w-6 h-6" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-700">Email Address</label>
-                                <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"/>
+                                <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Admin Profile</h2>
+                                <p className="text-slate-400 font-medium">Your personal administrative identity.</p>
                             </div>
                         </div>
-                         <div className="mt-6 pt-6 border-t border-base-200 flex justify-end">
-                            <button type="submit" className="px-6 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary/90 transition-colors">
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-2">
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Display Name</label>
+                                <input 
+                                    value={name} 
+                                    onChange={e => setName(e.target.value)} 
+                                    required 
+                                    className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold text-slate-700"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Email Address</label>
+                                <input 
+                                    type="email" 
+                                    value={email} 
+                                    onChange={e => setEmail(e.target.value)} 
+                                    required 
+                                    className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold text-slate-700"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="pt-6 border-t border-slate-50 flex justify-end">
+                            <button type="submit" className="px-10 py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-black transition-all shadow-xl shadow-slate-900/10 uppercase text-[10px] tracking-widest">
                                 Save Profile
                             </button>
                         </div>
-                    </form>
+                    </motion.form>
 
-                    <div className="bg-base-300 shadow-lg rounded-lg p-8">
-                        <h2 className="text-xl font-semibold text-slate-700 mb-6 border-b pb-4">Module Management</h2>
-                        <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-slate-200">
+                    {/* UI Customization */}
+                    <motion.form 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        onSubmit={handleThemeSave} 
+                        className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-sm space-y-10"
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-violet-500/10 rounded-2xl flex items-center justify-center text-violet-500">
+                                <Palette className="w-6 h-6" />
+                            </div>
                             <div>
-                                <h3 className="font-bold text-slate-800">Patient Locator Module</h3>
-                                <p className="text-xs text-slate-500">Allow patients to search medication availability.</p>
+                                <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Global Branding</h2>
+                                <p className="text-slate-400 font-medium">Customize the platform's visual signature.</p>
                             </div>
-                            <label className="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" checked={locatorEnabled} onChange={toggleLocator} className="sr-only peer" />
-                                <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-primary/50 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                            </label>
                         </div>
-                    </div>
 
-                     <form onSubmit={handleThemeSave} className="bg-base-300 shadow-lg rounded-lg p-8">
-                        <h2 className="text-xl font-semibold text-slate-700 mb-6 border-b pb-4">UI Customization</h2>
-                         <div>
-                            <label htmlFor="themeColor" className="block text-sm font-medium text-slate-700 mb-2">Primary Color</label>
-                            <div className="flex items-center gap-4">
-                                 <input type="color" id="themeColor" value={color} onChange={(e) => setColor(e.target.value)} className="p-1 h-12 w-12 block bg-white border border-gray-300 cursor-pointer rounded-lg"/>
-                                 <div className="flex-grow p-3 rounded-md text-center text-white font-bold" style={{ backgroundColor: color }}>
-                                     {color.toUpperCase()}
-                                 </div>
+                        <div className="space-y-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                                <div className="space-y-4">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Global Accent Color</label>
+                                    <div className="flex items-center gap-6">
+                                        <div className="relative">
+                                            <input 
+                                                type="color" 
+                                                id="themeColor" 
+                                                value={color} 
+                                                onChange={(e) => setColor(e.target.value)} 
+                                                className="w-20 h-20 rounded-[2rem] border-none cursor-pointer bg-transparent"
+                                            />
+                                            <div 
+                                                className="absolute inset-0 rounded-[2rem] pointer-events-none border-4 border-white shadow-inner"
+                                                style={{ backgroundColor: color }}
+                                            />
+                                        </div>
+                                        <div className="flex-1 space-y-2">
+                                            <p className="text-sm font-bold text-slate-700">Primary Theme</p>
+                                            <p className="text-sm font-mono font-black text-primary">{color.toUpperCase()}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">System Logo</label>
+                                    <div className="flex items-center gap-6">
+                                        <div className="w-20 h-20 bg-slate-50 rounded-[2rem] flex items-center justify-center border-2 border-dashed border-slate-200 relative overflow-hidden group">
+                                            {logoPreview ? (
+                                                <img src={logoPreview} alt="Logo Preview" className="max-h-full max-w-full object-contain p-2" />
+                                            ) : (
+                                                <ImageIcon className="w-6 h-6 text-slate-200" />
+                                            )}
+                                            <input type="file" onChange={handleLogoChange} accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" />
+                                        </div>
+                                        <div className="flex-1 space-y-1">
+                                            <p className="text-sm font-bold text-slate-700">Platform Logo</p>
+                                            <p className="text-[10px] text-slate-400 font-medium">Max 2MB. SVG/PNG.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Background Atmosphere</label>
+                                <div className="flex items-center gap-6">
+                                    <div className="w-full h-32 bg-slate-50 rounded-[2rem] flex items-center justify-center border-2 border-dashed border-slate-200 relative overflow-hidden group">
+                                        {bgPreview ? (
+                                            <img src={bgPreview} alt="BG Preview" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="flex flex-col items-center gap-2">
+                                                <Upload className="w-6 h-6 text-slate-200" />
+                                                <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Upload Atmosphere</span>
+                                            </div>
+                                        )}
+                                        <input type="file" onChange={handleBgChange} accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" />
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                         <div className="mt-4">
-                             <label className="block text-sm font-medium text-slate-700 mb-2">Background Image (Instant Apply)</label>
-                              <input type="file" onChange={handleBgChange} accept="image/*" className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"/>
-                             {bgPreview && <img src={bgPreview} alt="BG Preview" className="mt-2 h-24 w-auto rounded-md object-cover border"/>}
-                         </div>
-                         <div className="mt-4">
-                             <label className="block text-sm font-medium text-slate-700 mb-2">System Logo (Instant Apply)</label>
-                              <input type="file" onChange={handleLogoChange} accept="image/*" className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"/>
-                             {logoPreview && <img src={logoPreview} alt="Logo Preview" className="mt-2 h-16 w-auto p-1 border rounded bg-white"/>}
-                         </div>
-                         <div className="mt-6 pt-6 border-t border-base-200 flex justify-end">
-                            <button type="submit" className="px-6 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary/90 transition-colors">
-                                Apply Color
+
+                        <div className="pt-6 border-t border-slate-50 flex justify-end">
+                            <button type="submit" className="px-10 py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-black transition-all shadow-xl shadow-slate-900/10 uppercase text-[10px] tracking-widest">
+                                Apply Theme
                             </button>
                         </div>
-                    </form>
+                    </motion.form>
                 </div>
-                
-                <form onSubmit={handlePasswordChange} className="bg-base-300 shadow-lg rounded-lg p-8">
-                    <h2 className="text-xl font-semibold text-slate-700 mb-6 border-b pb-4">Change Password</h2>
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700">Current Password</label>
-                            <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"/>
+
+                <div className="space-y-12">
+                    {/* Module Management */}
+                    <motion.div 
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="bg-slate-900 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden"
+                    >
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full -mr-32 -mt-32 blur-3xl" />
+                        <div className="relative z-10 space-y-8">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-primary">
+                                    <Globe className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black uppercase tracking-tighter">Global Modules</h2>
+                                    <p className="text-slate-400 text-xs font-medium">Feature flag control center.</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div className="flex items-center justify-between p-6 bg-white/5 rounded-[2rem] border border-white/10 group hover:bg-white/10 transition-all cursor-pointer" onClick={toggleLocator}>
+                                    <div className="flex-1 pr-4">
+                                        <h3 className="font-black text-sm uppercase tracking-widest">Patient Locator</h3>
+                                        <p className="text-[10px] text-slate-400 font-medium mt-1 leading-relaxed">Public-facing medicine discovery module.</p>
+                                    </div>
+                                    {locatorEnabled ? <ToggleRight className="w-10 h-10 text-primary" /> : <ToggleLeft className="w-10 h-10 text-slate-600" />}
+                                </div>
+                            </div>
                         </div>
-                         <div>
-                            <label className="block text-sm font-medium text-slate-700">New Password</label>
-                            <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"/>
+                    </motion.div>
+
+                    {/* Security */}
+                    <motion.form 
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.1 }}
+                        onSubmit={handlePasswordChange} 
+                        className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm space-y-8"
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-500">
+                                <Lock className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Credentials</h2>
+                                <p className="text-slate-400 text-xs font-medium">Update admin password.</p>
+                            </div>
                         </div>
-                         <div>
-                            <label className="block text-sm font-medium text-slate-700">Confirm New Password</label>
-                            <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"/>
+
+                        <div className="space-y-4">
+                            <input 
+                                type="password" 
+                                value={currentPassword} 
+                                onChange={e => setCurrentPassword(e.target.value)} 
+                                placeholder="Current Password"
+                                required 
+                                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold text-slate-700 text-sm"
+                            />
+                            <input 
+                                type="password" 
+                                value={newPassword} 
+                                onChange={e => setNewPassword(e.target.value)} 
+                                placeholder="New Password"
+                                required 
+                                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold text-slate-700 text-sm"
+                            />
+                            <input 
+                                type="password" 
+                                value={confirmPassword} 
+                                onChange={e => setConfirmPassword(e.target.value)} 
+                                placeholder="Confirm New Password"
+                                required 
+                                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold text-slate-700 text-sm"
+                            />
                         </div>
-                        <div className="pt-6 flex justify-end">
-                            <button type="submit" className="w-full sm:w-auto px-6 py-2 bg-primary text-white rounded-md hover:bg-primary/90">
-                                Update Password
-                            </button>
-                        </div>
-                    </div>
-                </form>
+
+                        <button type="submit" className="w-full py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-black transition-all shadow-xl shadow-slate-900/10 uppercase text-[10px] tracking-widest">
+                            Update Password
+                        </button>
+                    </motion.form>
+                </div>
             </div>
         </div>
     );

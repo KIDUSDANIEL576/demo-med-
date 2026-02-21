@@ -56,6 +56,34 @@ export const generateExecutiveBriefWithAI = async (healthData: any) => {
 };
 
 /**
+ * AI for Patients: Find nearby pharmacies using Google Maps grounding.
+ */
+export const findNearbyPharmacies = async (location: { latitude: number, longitude: number }, query: string = "pharmacy") => {
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: `Find pharmacies near me. My current location is ${location.latitude}, ${location.longitude}. Search query: "${query}". 
+        Provide a list of pharmacies with their names, addresses, and any available details like ratings or opening hours.`,
+        config: {
+            tools: [{ googleMaps: {} }],
+            toolConfig: {
+                retrievalConfig: {
+                    latLng: {
+                        latitude: location.latitude,
+                        longitude: location.longitude
+                    }
+                }
+            }
+        },
+    });
+
+    return {
+        text: response.text,
+        groundingChunks: response.candidates?.[0]?.groundingMetadata?.groundingChunks || []
+    };
+};
+
+/**
  * AI for Patients: Intelligent medicine discovery from symptom-based queries.
  */
 export const suggestMedicinesForSymptoms = async (query: string) => {

@@ -4,11 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import DashboardCard from '../../components/DashboardCard';
 import { getPharmacyAdminDashboardData } from '../../services/mockApi';
-
-const CurrencyDollarIcon = (props: React.SVGProps<SVGSVGElement>) => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" {...props}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01" /></svg>;
-const ArchiveBoxXMarkIcon = (props: React.SVGProps<SVGSVGElement>) => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" {...props}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-14L4 7m0 10l8 4m-8-4v-2.5a1.5 1.5 0 013 0V17m0 0V9.5a1.5 1.5 0 013 0V17m10-5l-3-3m0 0l-3 3m3-3v12" /></svg>;
-const DocumentCheckIcon = (props: React.SVGProps<SVGSVGElement>) => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" {...props}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
-const BellIcon = (props: React.SVGProps<SVGSVGElement>) => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props}><path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>;
+import { DollarSign, PackageX, FileCheck, AlertCircle, TrendingUp, ArrowRight, Activity, Clock } from 'lucide-react';
+import { motion } from 'motion/react';
 
 const PharmacyDashboard: React.FC = () => {
     const { user } = useAuth();
@@ -22,23 +19,38 @@ const PharmacyDashboard: React.FC = () => {
     }, [user]);
 
     return (
-        <div className="space-y-8">
-            <h1 className="text-3xl font-bold text-slate-800">Pharmacy Dashboard</h1>
+        <div className="space-y-12">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-[0.2em]">
+                        <Activity className="w-4 h-4" />
+                        Real-time Analytics
+                    </div>
+                    <h1 className="text-5xl font-black text-slate-900 tracking-tighter uppercase">Pharmacy Overview</h1>
+                    <p className="text-slate-400 font-medium">Welcome back, {user?.name.split(' ')[0]}. Here's what's happening today.</p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <div className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-widest">
+                        <Clock className="w-4 h-4" />
+                        Last Sync: Just Now
+                    </div>
+                </div>
+            </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                  <div className="cursor-pointer" onClick={() => navigate('/dashboard/sales')}>
                     <DashboardCard 
                         title="Sales Today" 
                         value={`$${stats.totalSalesToday.toFixed(2)}`}
-                        icon={<CurrencyDollarIcon />}
+                        icon={<DollarSign />}
                         colorClass="bg-emerald-500"
                     />
                 </div>
                  <div className="cursor-pointer" onClick={() => navigate('/dashboard/inventory', { state: { filter: 'lowStock' } })}>
                     <DashboardCard 
-                        title="Low Stock Items" 
+                        title="Low Stock" 
                         value={stats.lowStockItems}
-                        icon={<ArchiveBoxXMarkIcon />}
+                        icon={<PackageX />}
                         colorClass="bg-amber-500"
                     />
                 </div>
@@ -46,25 +58,72 @@ const PharmacyDashboard: React.FC = () => {
                     <DashboardCard 
                         title="Expiring Soon" 
                         value={stats.expiringItems}
-                        icon={<BellIcon />}
+                        icon={<AlertCircle />}
                         colorClass="bg-red-500"
                     />
                 </div>
                 <div className="cursor-pointer" onClick={() => navigate('/dashboard/prescription-lookup')}>
                     <DashboardCard 
-                        title="Prescriptions Filled" 
+                        title="Filled Today" 
                         value={stats.prescriptionsFilled}
-                        icon={<DocumentCheckIcon />}
-                        colorClass="bg-sky-500"
+                        icon={<FileCheck />}
+                        colorClass="bg-primary"
                     />
                 </div>
             </div>
 
-             <div className="bg-base-300 shadow-lg rounded-lg p-6 animate-fade-in">
-                <h2 className="text-xl font-semibold mb-4">Sales & Inventory Overview</h2>
-                <p className="text-slate-600">
-                    Charts showing sales trends and inventory levels would be displayed here. (Placeholder for recharts integration)
-                </p>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="lg:col-span-2 bg-white border border-slate-100 rounded-[3rem] p-10 shadow-sm relative overflow-hidden"
+                >
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[80px] -mr-32 -mt-32" />
+                    <div className="relative z-10 space-y-8">
+                        <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                                <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Performance Trends</h2>
+                                <p className="text-sm text-slate-400 font-medium">Sales and inventory metrics over the last 30 days</p>
+                            </div>
+                            <button className="p-3 bg-slate-50 rounded-2xl text-slate-400 hover:text-primary transition-colors">
+                                <TrendingUp className="w-5 h-5" />
+                            </button>
+                        </div>
+                        
+                        <div className="h-64 bg-slate-50 rounded-[2rem] border border-dashed border-slate-200 flex items-center justify-center">
+                            <div className="text-center space-y-2">
+                                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Analytics Engine Initializing</p>
+                                <p className="text-xs text-slate-300">Recharts visualization will be rendered here</p>
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
+
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="bg-slate-900 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden flex flex-col justify-between"
+                >
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-primary/20 blur-[60px] -mr-20 -mt-20" />
+                    <div className="relative z-10 space-y-6">
+                        <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center shadow-xl shadow-primary/20">
+                            <TrendingUp className="w-6 h-6" />
+                        </div>
+                        <div className="space-y-2">
+                            <h3 className="text-2xl font-black tracking-tight uppercase">Growth Insights</h3>
+                            <p className="text-slate-400 text-sm leading-relaxed">Your pharmacy is performing <span className="text-primary font-bold">12% better</span> than last month. Consider restocking top-selling items.</p>
+                        </div>
+                    </div>
+                    
+                    <button 
+                        onClick={() => navigate('/dashboard/analytics')}
+                        className="relative z-10 w-full py-5 bg-white text-slate-900 font-bold rounded-2xl hover:bg-slate-100 transition-all flex items-center justify-center gap-3 group"
+                    >
+                        View Full Reports
+                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                </motion.div>
             </div>
         </div>
     );
