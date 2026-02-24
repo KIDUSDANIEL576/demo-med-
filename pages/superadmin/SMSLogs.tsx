@@ -42,7 +42,7 @@ const SMSLogs: React.FC = () => {
                     columns={columns}
                     data={logs}
                     renderRow={(log) => (
-                        <tr key={log.id} className="hover:bg-slate-50 transition-colors">
+                        <>
                             <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-400 font-mono">
                                 {new Date(log.timestamp).toLocaleString()}
                             </td>
@@ -61,7 +61,7 @@ const SMSLogs: React.FC = () => {
                                     {log.status}
                                 </span>
                             </td>
-                        </tr>
+                        </>
                     )}
                 />
             </div>

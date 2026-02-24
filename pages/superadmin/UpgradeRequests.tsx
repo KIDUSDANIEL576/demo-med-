@@ -76,7 +76,7 @@ const UpgradeRequests: React.FC = () => {
                 columns={columns}
                 data={requests}
                 renderRow={(req) => (
-                    <tr key={req.id} className={req.status === 'pending' ? 'bg-white' : 'bg-gray-50'}>
+                    <>
                         <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-900">{getPharmacyName(req)}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-primary font-bold">{req.requestedPlan}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-slate-600 capitalize">{req.billingCycle || 'monthly'}</td>
@@ -109,7 +109,7 @@ const UpgradeRequests: React.FC = () => {
                                 </div>
                             )}
                         </td>
-                    </tr>
+                    </>
                 )}
             />
 

@@ -115,7 +115,7 @@ const ReferralControl: React.FC = () => {
                         columns={columns}
                         data={referrals}
                         renderRow={(referral) => (
-                            <tr key={referral.id} className={referral.status === 'pending' ? 'bg-amber-50' : ''}>
+                            <>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{referral.referrerName}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-500">{referral.referralCode}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
@@ -153,7 +153,7 @@ const ReferralControl: React.FC = () => {
                                         </div>
                                     )}
                                 </td>
-                            </tr>
+                            </>
                         )}
                     />
                 </div>

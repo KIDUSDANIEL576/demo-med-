@@ -93,7 +93,7 @@ const FeedbackCenter: React.FC = () => {
                 renderRow={(suggestion) => {
                     const user = users.get(suggestion.user_id);
                     return (
-                        <tr key={suggestion.id}>
+                        <>
                             <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm font-medium text-slate-900">{user?.name || 'Unknown User'}</div>
                                 <div className="text-xs text-slate-500">{suggestion.user_role}</div>
@@ -132,7 +132,7 @@ const FeedbackCenter: React.FC = () => {
                                     <ChatBubbleLeftEllipsisIcon className="w-5 h-5" />
                                 </button>
                             </td>
-                        </tr>
+                        </>
                     )
                 }}
             />

@@ -91,7 +91,7 @@ const PatientApprovals: React.FC = () => {
                     columns={columns}
                     data={queue}
                     renderRow={(patient) => (
-                        <tr key={patient.id} className={patient.status === PatientStatus.PENDING_APPROVAL ? 'bg-indigo-50/20' : 'hover:bg-slate-50 transition-colors'}>
+                        <>
                             <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm font-black text-slate-800">{patient.name}</div>
                                 <div className="text-[10px] font-mono text-slate-400">ID: {patient.id}</div>
@@ -148,7 +148,7 @@ const PatientApprovals: React.FC = () => {
                                     </button>
                                 )}
                             </td>
-                        </tr>
+                        </>
                     )}
                 />
             </div>

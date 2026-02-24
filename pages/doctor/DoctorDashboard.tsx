@@ -76,12 +76,12 @@ const DoctorDashboard: React.FC = () => {
                     columns={columns}
                     data={prescriptions}
                     renderRow={(p) => (
-                        <tr key={p.id}>
+                        <>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{p.createdAt}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{p.patientName}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-600">{p.prescriptionCode}</td>
                             <td className="px-6 py-4 text-sm text-slate-500 truncate max-w-xs">{p.details}</td>
-                        </tr>
+                        </>
                     )}
                  />
             </div>

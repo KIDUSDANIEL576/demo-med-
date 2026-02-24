@@ -95,7 +95,7 @@ const Doctors: React.FC = () => {
                 columns={columns}
                 data={doctors}
                 renderRow={(doctor) => (
-                    <tr key={doctor.id} className="hover:bg-slate-50 transition-colors">
+                    <>
                         <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-bold text-slate-900">{doctor.name}</div>
                             <div className="text-xs text-slate-500 font-medium">{doctor.email}</div>
@@ -111,7 +111,7 @@ const Doctors: React.FC = () => {
                                 <button onClick={() => handleDeleteClick(doctor)} className="text-red-600 hover:text-red-800 transition-transform active:scale-95" title="Delete"><TrashIcon /></button>
                             </div>
                         </td>
-                    </tr>
+                    </>
                 )}
             />
             {isModalOpen && (

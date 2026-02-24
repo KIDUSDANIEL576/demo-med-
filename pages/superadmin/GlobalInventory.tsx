@@ -103,7 +103,7 @@ const GlobalInventory: React.FC = () => {
                     }
 
                     return (
-                        <tr key={item.id} className={rowClass} onClick={() => handleRowClick(item)}>
+                        <>
                             <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm font-bold">{item.medicineName}</div>
                                 {item.isRecalled && <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-white text-red-700 shadow-sm mt-1">RECALLED</span>}
@@ -134,7 +134,7 @@ const GlobalInventory: React.FC = () => {
                                     {item.isRecalled ? 'Revoke Recall' : 'Recall Batch'}
                                 </button>
                             </td>
-                        </tr>
+                        </>
                     )
                 }}
             />

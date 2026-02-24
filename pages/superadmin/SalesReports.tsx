@@ -114,13 +114,13 @@ const SuperAdminSalesReports: React.FC = () => {
                 columns={columns}
                 data={sales}
                 renderRow={(sale) => (
-                    <tr key={sale.id}>
+                    <>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{sale.date}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{pharmacyMap.get(sale.pharmacyId) || 'Unknown'}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{sale.medicineName}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{sale.quantity}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">${sale.totalPrice.toFixed(2)}</td>
-                    </tr>
+                    </>
                 )}
             />
         </div>

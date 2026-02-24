@@ -116,7 +116,7 @@ const AuditLogs: React.FC = () => {
                 columns={columns}
                 data={filteredLogs}
                 renderRow={(log) => (
-                    <tr key={log.id} className={log.severity === 'high' ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-base-100'}>
+                    <>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-mono">
                             {new Date(log.timestamp).toLocaleString()}
                         </td>
@@ -163,7 +163,7 @@ const AuditLogs: React.FC = () => {
                                 </div>
                             </details>
                         </td>
-                    </tr>
+                    </>
                 )}
             />
         </div>
