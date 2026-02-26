@@ -42,7 +42,7 @@ const UpgradePlan: React.FC<{ featureName: string }> = ({ featureName }) => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-10 items-stretch">
                 {plans.map(plan => {
                     const isCurrentPlan = user?.plan === plan.name;
-                    const isUpgradeTarget = !isCurrentPlan && (plan.name === SubscriptionPlan.STANDARD || plan.name === SubscriptionPlan.PLATINUM);
+                    const isUpgradeTarget = !isCurrentPlan && (plan.name === SubscriptionPlan.PRO || plan.name === SubscriptionPlan.ENTERPRISE);
 
                     return (
                         <div key={plan.name} className={`bg-base-300 rounded-lg shadow-lg p-6 flex flex-col border-t-4 ${plan.color} ${isCurrentPlan ? 'ring-2 ring-primary' : ''}`}>

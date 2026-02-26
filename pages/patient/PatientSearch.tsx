@@ -1,10 +1,17 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { searchPublicInventory, initiatePaidRequest, confirmPaidRequest, getSearchSuggestions } from '../../services/mockApi';
+import { 
+    searchPublicInventory, 
+    initiatePaidRequest, 
+    confirmPaidRequest, 
+    getSearchSuggestions,
+    getSafetySettings,
+    logSearch 
+} from '../../services/mockApi';
 import { suggestMedicinesForSymptoms, findNearbyPharmacies } from '../../services/aiService';
-import { PublicInventoryResult, PatientRequest } from '../../types';
-import { Search, Sparkles, MapPin, Navigation, CreditCard, CheckCircle2, ChevronRight, Info, Clock, Star } from 'lucide-react';
+import { PublicInventoryResult, PatientRequest, SafetySettings } from '../../types';
+import { Search, Sparkles, MapPin, Navigation, CreditCard, CheckCircle2, ChevronRight, Info, Clock, Star, ShieldAlert, PauseCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 
@@ -18,6 +25,7 @@ const PatientSearch = () => {
     const [loading, setLoading] = useState(false);
     const [processing, setProcessing] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [safety, setSafety] = useState<SafetySettings | null>(null);
     
     const [selectedItem, setSelectedItem] = useState<PublicInventoryResult | null>(null);
     const [activeRequest, setActiveRequest] = useState<PatientRequest | null>(null);
@@ -29,6 +37,7 @@ const PatientSearch = () => {
     const [userLocation, setUserLocation] = useState<{ lat: number, lng: number } | null>(null);
 
     useEffect(() => {
+        getSafetySettings().then(setSafety);
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
@@ -68,6 +77,11 @@ const PatientSearch = () => {
     };
 
     const handleSearch = async (val: string) => {
+        if (safety && safety.currentDailyCount >= safety.maxRequestsPerDay) {
+            alert("Platform daily capacity reached. Please try again tomorrow.");
+            return;
+        }
+
         setQuery(val);
         setShowSuggestions(false);
         setLoading(true);
@@ -75,6 +89,9 @@ const PatientSearch = () => {
         setNearbyPharmacies(null);
         
         try {
+            // Log the search for analytics
+            await logSearch(val, 'Addis Ababa');
+            
             // 1. Search our internal network
             const data = await searchPublicInventory(val);
             setResults(data);
@@ -97,6 +114,10 @@ const PatientSearch = () => {
     };
 
     const startRequest = async (item: PublicInventoryResult) => {
+        if (safety && safety.requestsPaused) {
+            alert("New requests are currently paused by the platform administrator. You can still search for medications.");
+            return;
+        }
         if (!patient) {
             alert("Please sign in to make a request.");
             return;
@@ -134,6 +155,20 @@ const PatientSearch = () => {
                                 <Sparkles className="w-4 h-4" />
                                 AI-Powered Healthcare
                             </motion.div>
+                            
+                            {safety && safety.requestsPaused && (
+                                <motion.div 
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="max-w-md mx-auto bg-amber-50 border border-amber-200 p-3 rounded-2xl flex items-center gap-3 text-amber-800"
+                                >
+                                    <PauseCircle className="w-5 h-5 flex-shrink-0" />
+                                    <p className="text-xs font-bold uppercase tracking-tight text-left">
+                                        Reservations Paused: You can search, but reserving stock is temporarily disabled.
+                                    </p>
+                                </motion.div>
+                            )}
+
                             <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tight leading-[1.1]">
                                 Find Your Medicine <br />
                                 <span className="text-primary italic font-serif">Instantly.</span>

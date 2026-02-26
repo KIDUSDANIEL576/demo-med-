@@ -36,6 +36,9 @@ const PharmacyModal: React.FC<PharmacyModalProps> = ({ pharmacy, onClose, onSave
             });
         } else {
             // Reset form for adding new pharmacy
+            const nextYear = new Date();
+            nextYear.setFullYear(nextYear.getFullYear() + 1);
+            
             setFormData({
                 name: '',
                 email: '',
@@ -44,7 +47,7 @@ const PharmacyModal: React.FC<PharmacyModalProps> = ({ pharmacy, onClose, onSave
                 staff: 0,
                 plan: SubscriptionPlan.BASIC,
                 planStartDate: new Date().toISOString().split('T')[0],
-                planExpiryDate: '',
+                planExpiryDate: nextYear.toISOString().split('T')[0],
                 createdAt: new Date().toISOString().split('T')[0],
             });
         }
@@ -52,7 +55,12 @@ const PharmacyModal: React.FC<PharmacyModalProps> = ({ pharmacy, onClose, onSave
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: name === 'staff' ? parseInt(value) : value }));
+        if (name === 'staff') {
+            const parsed = parseInt(value);
+            setFormData(prev => ({ ...prev, [name]: isNaN(parsed) ? 0 : parsed }));
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }));
+        }
     };
 
     const handleSubmit = (e: React.FormEvent) => {

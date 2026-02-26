@@ -15,6 +15,7 @@ const PatientApprovals: React.FC = () => {
     const [actionLoading, setActionLoading] = useState(false);
     const [pendingAction, setPendingAction] = useState<PatientStatus | null>(null);
     const [targetId, setTargetId] = useState<string | null>(null);
+    const [paymentAmount, setPaymentAmount] = useState<number>(20); // Default $20 approval fee
 
     useEffect(() => {
         fetchQueue();
@@ -38,7 +39,7 @@ const PatientApprovals: React.FC = () => {
         
         setActionLoading(true);
         try {
-            await updatePatientStatus(targetId, pendingAction);
+            await updatePatientStatus(targetId, pendingAction, pendingAction === PatientStatus.ACTIVE ? paymentAmount : undefined);
             await fetchQueue();
             setIsConfirmOpen(false);
         } catch (error) {
@@ -162,7 +163,23 @@ const PatientApprovals: React.FC = () => {
                 message={modalConfig.message}
                 confirmText={modalConfig.confirmText}
                 isDangerous={modalConfig.isDangerous}
-            />
+            >
+                {pendingAction === PatientStatus.ACTIVE && (
+                    <div className="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Approval Fee (USD)</label>
+                        <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                            <input 
+                                type="number" 
+                                value={paymentAmount}
+                                onChange={(e) => setPaymentAmount(Number(e.target.value))}
+                                className="w-full pl-8 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-primary/10 outline-none font-bold text-slate-700"
+                            />
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-2 italic">* This will be recorded in platform sales reports.</p>
+                    </div>
+                )}
+            </ConfirmationModal>
         </div>
     );
 };

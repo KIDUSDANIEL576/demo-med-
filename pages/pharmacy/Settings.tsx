@@ -23,7 +23,7 @@ const PharmacySettings: React.FC = () => {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     
-    const isPlatinum = user?.plan === SubscriptionPlan.PLATINUM;
+    const isEnterprise = user?.plan === SubscriptionPlan.ENTERPRISE;
 
     useEffect(() => {
         setColor(primaryColor || '#007E85');
@@ -286,12 +286,12 @@ const PharmacySettings: React.FC = () => {
                                         <p className="text-[10px] text-slate-400 font-medium mt-1 leading-relaxed">Allow other pharmacies to see your stock levels for discovery.</p>
                                     </div>
                                     <label className="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" checked={shareInventory} onChange={handleOptInChange} disabled={!isPlatinum} className="sr-only peer" />
+                                        <input type="checkbox" checked={shareInventory} onChange={handleOptInChange} disabled={!isEnterprise} className="sr-only peer" />
                                         <div className="w-14 h-8 bg-white/10 rounded-full peer peer-focus:ring-4 peer-focus:ring-primary/20 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-[4px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary"></div>
                                     </label>
                                 </div>
 
-                                {!isPlatinum && (
+                                {!isEnterprise && (
                                     <div className="p-6 bg-amber-500/10 border border-amber-500/20 rounded-[2rem] flex items-start gap-4">
                                         <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                                         <div className="space-y-1">

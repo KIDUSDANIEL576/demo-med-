@@ -46,13 +46,13 @@ const MarketplacePortal: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
 
-    const isPlatinum = user?.plan === SubscriptionPlan.PLATINUM;
+    const isEnterprise = user?.plan === SubscriptionPlan.ENTERPRISE;
 
     useEffect(() => {
-        if (isPlatinum) {
+        if (isEnterprise) {
             loadBaseData();
         }
-    }, [isPlatinum]);
+    }, [isEnterprise]);
 
     const loadBaseData = async () => {
         setLoading(true);
@@ -124,7 +124,7 @@ const MarketplacePortal: React.FC = () => {
         }
     };
 
-    if (!isPlatinum) return <UpgradePlan featureName="B2B Supply Marketplace" />;
+    if (!isEnterprise) return <UpgradePlan featureName="B2B Supply Marketplace" />;
 
     if (loading && view === 'suppliers') {
         return (

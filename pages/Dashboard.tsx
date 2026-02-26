@@ -77,7 +77,7 @@ const Dashboard = () => {
             <Route path="marketplace-analytics" element={<MarketplaceAnalytics />} />
             <Route path="patient-safety" element={<PatientPlatformControls />} />
             <Route path="patient-approvals" element={<PatientApprovals />} />
-            <Route path="patient-plans" element={<PatientPlanControl />} />
+            <Route path="patient-plans" element={<Plans />} />
         </Routes>
     );
 

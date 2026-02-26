@@ -11,8 +11,8 @@ export enum UserRole {
 
 export enum SubscriptionPlan {
     BASIC = 'Basic',
-    STANDARD = 'Standard',
-    PLATINUM = 'Platinum',
+    PRO = 'Pro',
+    ENTERPRISE = 'Enterprise',
     PATIENT_FREE = 'Patient Free',
     PATIENT_PAID = 'Patient Paid',
 }
@@ -179,6 +179,27 @@ export interface AbuseLog {
     details: string;
 }
 
+export interface PlatformSale {
+    id: string;
+    type: 'subscription' | 'patient_fee';
+    entityId: string; // pharmacyId or patientId
+    entityName: string;
+    amount: number;
+    plan: SubscriptionPlan;
+    date: string;
+    status: 'paid' | 'pending';
+}
+
+export interface PlatformSettings {
+    displayName: string;
+    email: string;
+    accentColor: string;
+    theme: 'light' | 'dark' | 'system';
+    logoUrl?: string;
+    backgroundUrl?: string;
+    patientLocatorEnabled: boolean;
+}
+
 export interface PatientPlatformAnalytics {
     dailyVolume: { date: string; count: number }[];
     topSearched: { name: string; hits: number }[];
@@ -275,6 +296,51 @@ export interface InventoryItem {
     isRecalled?: boolean;
 }
 
+// --- ENTERPRISE INVENTORY ENGINE ---
+
+export interface Medicine {
+  id: string;
+  name: string;
+  genericName: string;
+  strength: string;
+  dosageForm: string;
+  manufacturer: string;
+  category: InventoryCategory;
+}
+
+export interface InventoryBatch {
+  id: string;
+  organizationId: number | string;
+  medicineId: string;
+  batchNumber: string;
+  expiryDate: string;
+  quantity: number;
+  purchasePrice: number;
+  sellingPrice: number;
+  supplierId: string;
+  createdAt: string;
+  isRecalled?: boolean;
+}
+
+export enum StockMovementType {
+  PURCHASE = 'purchase',
+  SALE = 'sale',
+  ADJUSTMENT = 'adjustment',
+  RETURN = 'return',
+  TRANSFER = 'transfer'
+}
+
+export interface StockMovement {
+  id: string;
+  organizationId: number | string;
+  medicineId: string;
+  batchId: string;
+  type: StockMovementType;
+  quantity: number;
+  referenceId?: string;
+  createdAt: string;
+}
+
 export interface Sale {
     id: number;
     pharmacyId: number;
@@ -303,7 +369,7 @@ export interface AuditLog {
     id: string;
     tableName: string;
     recordId: string;
-    operation: 'UPDATE' | 'DELETE' | 'INSERT' | 'SEARCH' | 'PAYMENT' | 'SMS_SENT' | 'ORDER' | 'APPROVAL' | 'REJECTION' | 'MARKETPLACE_ORDER';
+    operation: 'UPDATE' | 'DELETE' | 'INSERT' | 'SEARCH' | 'PAYMENT' | 'SMS_SENT' | 'ORDER' | 'APPROVAL' | 'REJECTION' | 'MARKETPLACE_ORDER' | 'BULK_IMPORT';
     oldData?: any;
     newData?: any;
     changedBy: string;

@@ -9,8 +9,8 @@ interface FeatureToggleSwitchProps {
 // Fix: Type '{ Basic: string; Standard: string; Platinum: string; }' is missing the following properties from type 'Record<SubscriptionPlan, string>': "Patient Free", "Patient Paid"
 const planColors: Record<SubscriptionPlan, string> = {
     [SubscriptionPlan.BASIC]: 'bg-amber-200 text-amber-800',
-    [SubscriptionPlan.STANDARD]: 'bg-green-200 text-green-800',
-    [SubscriptionPlan.PLATINUM]: 'bg-sky-200 text-sky-800',
+    [SubscriptionPlan.PRO]: 'bg-green-200 text-green-800',
+    [SubscriptionPlan.ENTERPRISE]: 'bg-sky-200 text-sky-800',
     [SubscriptionPlan.PATIENT_FREE]: 'bg-slate-200 text-slate-800',
     [SubscriptionPlan.PATIENT_PAID]: 'bg-indigo-200 text-indigo-800',
 };

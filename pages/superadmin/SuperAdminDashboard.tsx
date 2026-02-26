@@ -4,25 +4,28 @@ import { getSuperAdminDashboardData } from '../../services/mockApi';
 import { useTheme } from '../../contexts/ThemeContext';
 import BarChart from '../../components/BarChart';
 import UpdateNoticeModal from '../../components/UpdateNoticeModal';
+import { useNavigate } from 'react-router-dom';
 import { Building2, DollarSign, PackageX, Users, Megaphone, Sparkles, Activity, Clock, ArrowRight, TrendingUp } from 'lucide-react';
 import { motion } from 'motion/react';
 
-const salesData = [
-    { name: 'Jan', value: 4000 },
-    { name: 'Feb', value: 3000 },
-    { name: 'Mar', value: 5000 },
-    { name: 'Apr', value: 4500 },
-    { name: 'May', value: 6000 },
-    { name: 'Jun', value: 5500 },
-];
-
 const SuperAdminDashboard: React.FC = () => {
-    const [stats, setStats] = useState({ totalPharmacies: 0, totalSales: 0, inventoryShortages: 0, newUsersThisMonth: 0 });
+    const [stats, setStats] = useState({ 
+        totalPharmacies: 0, 
+        totalSales: 0, 
+        totalMRR: 0,
+        inventoryShortages: 0, 
+        newUsersThisMonth: 0,
+        pendingApprovals: 0,
+        pendingUpdates: 0,
+        chartData: [] as { name: string, value: number }[],
+        salesGrowth: 0
+    });
     const { theme, setTheme } = useTheme();
     const [isNoticeModalOpen, setNoticeModalOpen] = useState(false);
+    const navigate = useNavigate();
 
     useEffect(() => {
-        getSuperAdminDashboardData().then(data => setStats(data));
+        getSuperAdminDashboardData().then(data => setStats(data as any));
     }, []);
     
     const handleThemeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,8 +74,8 @@ const SuperAdminDashboard: React.FC = () => {
                     colorClass="bg-sky-500"
                 />
                 <DashboardCard 
-                    title="Gross Revenue" 
-                    value={`$${stats.totalSales.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                    title="Total MRR" 
+                    value={`$${stats.totalMRR.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                     icon={<DollarSign />}
                     colorClass="bg-emerald-500"
                 />
@@ -105,12 +108,12 @@ const SuperAdminDashboard: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-black uppercase tracking-widest">
                                 <TrendingUp className="w-4 h-4" />
-                                +24% YoY
+                                +{stats.salesGrowth}% YoY
                             </div>
                         </div>
                         
                         <div className="h-80 w-full">
-                            <BarChart data={salesData} />
+                            <BarChart data={stats.chartData.length > 0 ? stats.chartData : []} />
                         </div>
                     </div>
                 </motion.div>
@@ -131,7 +134,10 @@ const SuperAdminDashboard: React.FC = () => {
                                 <h3 className="text-2xl font-black tracking-tight uppercase">System Health</h3>
                                 <p className="text-slate-400 text-sm leading-relaxed font-medium">All nodes are operational. Latency is within optimal parameters (42ms).</p>
                             </div>
-                            <button className="flex items-center gap-2 text-xs font-black text-primary uppercase tracking-[0.2em] group-hover:translate-x-2 transition-transform">
+                            <button 
+                                onClick={() => navigate('/dashboard/system-health')}
+                                className="flex items-center gap-2 text-xs font-black text-primary uppercase tracking-[0.2em] group-hover:translate-x-2 transition-transform"
+                            >
                                 View Status <ArrowRight className="w-4 h-4" />
                             </button>
                         </div>
@@ -150,9 +156,14 @@ const SuperAdminDashboard: React.FC = () => {
                             </div>
                             <div className="space-y-3">
                                 <h3 className="text-2xl font-black tracking-tight uppercase">Pending Tasks</h3>
-                                <p className="text-white/80 text-sm leading-relaxed font-medium">You have <span className="font-black text-white">14 pharmacy approvals</span> and <span className="font-black text-white">3 system updates</span> pending.</p>
+                                <p className="text-white/80 text-sm leading-relaxed font-medium">
+                                    You have <span className="font-black text-white">{stats.pendingApprovals} pharmacy approvals</span> and <span className="font-black text-white">{stats.pendingUpdates} system updates</span> pending.
+                                </p>
                             </div>
-                            <button className="w-full py-4 bg-white text-primary font-black rounded-2xl hover:bg-slate-50 transition-all uppercase text-xs tracking-widest shadow-xl shadow-black/10">
+                            <button 
+                                onClick={() => navigate('/dashboard/upgrade-requests')}
+                                className="w-full py-4 bg-white text-primary font-black rounded-2xl hover:bg-slate-50 transition-all uppercase text-xs tracking-widest shadow-xl shadow-black/10"
+                            >
                                 Review Queue
                             </button>
                         </div>

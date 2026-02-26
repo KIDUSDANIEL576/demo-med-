@@ -104,12 +104,15 @@ const Pharmacies: React.FC = () => {
         setCredentialsModalOpen(true);
     };
 
-    const handleSave = (pharmacy: Omit<Pharmacy, 'id'> | Pharmacy) => {
-        const promise = 'id' in pharmacy ? updatePharmacy(pharmacy) : addPharmacy(pharmacy as Omit<Pharmacy, 'id'>);
-        promise.then(() => {
+    const handleSave = async (pharmacy: Omit<Pharmacy, 'id'> | Pharmacy) => {
+        try {
+            const promise = 'id' in pharmacy ? updatePharmacy(pharmacy) : addPharmacy(pharmacy as Omit<Pharmacy, 'id'>);
+            await promise;
             fetchPharmacies();
             setIsModalOpen(false);
-        });
+        } catch (err: any) {
+            alert(err.message || "Failed to save pharmacy details.");
+        }
     };
     
     const handleCredentialSave = () => {
@@ -168,7 +171,7 @@ const Pharmacies: React.FC = () => {
                             </td>
                             <td className="px-8 py-6 whitespace-nowrap">
                                 <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${
-                                    pharmacy.plan === SubscriptionPlan.PLATINUM ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-50 text-slate-600 border-slate-100'
+                                    pharmacy.plan === SubscriptionPlan.ENTERPRISE ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-slate-50 text-slate-600 border-slate-100'
                                 }`}>
                                     {pharmacy.plan}
                                 </span>

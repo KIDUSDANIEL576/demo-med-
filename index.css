@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+:root {
+  --color-primary: #007E85;
+  --color-secondary: #34D399;
+  --color-base-100: #F3F4F6;
+  --color-base-200: #E5E7EB;
+  --color-base-300: #FFFFFF;
+}
+
+body {
+  @apply bg-base-100 text-slate-900;
+  font-family: 'Inter', sans-serif;
+}
+
+.markdown-body {
+  @apply prose prose-slate max-w-none;
+}

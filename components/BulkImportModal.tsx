@@ -24,7 +24,7 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose, onSuccess })
         }
     }, [user]);
 
-    const isPlatinum = pharmacy?.plan === SubscriptionPlan.PLATINUM;
+    const isEnterprise = pharmacy?.plan === SubscriptionPlan.ENTERPRISE;
 
     const handleDownloadTemplate = () => {
         // Create a worksheet
@@ -76,14 +76,19 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose, onSuccess })
             const row = rows[i];
             if (!row || row.length === 0) continue;
 
+            const parseNum = (val: any, isInt = false) => {
+                const parsed = isInt ? parseInt(val) : parseFloat(val);
+                return isNaN(parsed) ? 0 : parsed;
+            };
+
             const item: any = {
                 medicineName: row[0],
                 category: row[1] || 'Other',
                 batchNumber: row[2],
-                stock: parseInt(row[3]),
+                stock: parseNum(row[3], true),
                 expiryDate: row[4],
-                costPrice: parseFloat(row[5]),
-                price: parseFloat(row[6]),
+                costPrice: parseNum(row[5]),
+                price: parseNum(row[6]),
                 brand: row[7],
                 sku: row[8]
             };
@@ -108,14 +113,18 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose, onSuccess })
         if (!pharmacy || !user) return;
         setLoading(true);
         try {
-            await addInventoryItemsBulk(parsedData, pharmacy.id, user.name);
-            setStep(3);
-            setTimeout(() => {
-                onSuccess();
-                onClose();
-            }, 2000);
+            const result = await addInventoryItemsBulk(parsedData, pharmacy.id, user.name);
+            if (result.success) {
+                setStep(3);
+                setTimeout(() => {
+                    onSuccess();
+                    onClose();
+                }, 2000);
+            } else {
+                setValidationErrors([result.message || "Upload failed on server."]);
+            }
         } catch (err) {
-            setValidationErrors(["Upload failed on server."]);
+            setValidationErrors(["An unexpected error occurred during upload."]);
         } finally {
             setLoading(false);
         }
@@ -124,7 +133,7 @@ const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose, onSuccess })
     if (!pharmacy) return null;
 
     // --- GATE: Upgrade Required ---
-    if (!isPlatinum) {
+    if (!isEnterprise) {
         return (
             <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 animate-fade-in backdrop-blur-sm">
                 <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md text-center border-t-4 border-gray-400">

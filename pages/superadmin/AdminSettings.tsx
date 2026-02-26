@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
-import { updateUserProfile, changePassword, getFeatureFlags } from '../../services/mockApi';
-import { FeatureFlag } from '../../types';
+import { updateUserProfile, changePassword, getPlatformSettings, updatePlatformSettings } from '../../services/mockApi';
+import { PlatformSettings } from '../../types';
 import { Settings, User, Shield, Palette, Lock, CheckCircle2, AlertCircle, Upload, Image as ImageIcon, Globe, ToggleLeft, ToggleRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -28,9 +28,12 @@ const AdminSettings: React.FC = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
 
     useEffect(() => {
-        getFeatureFlags().then(flags => {
-            const locator = flags.find(f => f.feature_key === 'public_locator_module');
-            if (locator) setLocatorEnabled(locator.default_enabled);
+        getPlatformSettings().then(settings => {
+            setName(settings.displayName);
+            setEmail(settings.email);
+            setColor(settings.accentColor);
+            setLocatorEnabled(settings.patientLocatorEnabled);
+            setLogoPreview(settings.logoUrl || null);
         });
     }, []);
 
@@ -42,16 +45,11 @@ const AdminSettings: React.FC = () => {
 
     const handleProfileSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (user) {
-            const updatedUser = { ...user, name, email };
-            await updateUserProfile(updatedUser);
-            setUser(updatedUser);
-            sessionStorage.setItem('user', JSON.stringify(updatedUser));
-            showStatusMessage('Profile updated successfully!');
-        }
+        await updatePlatformSettings({ displayName: name, email });
+        showStatusMessage('Profile updated successfully!');
     };
     
-    const handleBgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleBgChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             if (file.size > 5 * 1024 * 1024) { 
@@ -59,9 +57,9 @@ const AdminSettings: React.FC = () => {
                 return;
             }
             const reader = new FileReader();
-            reader.onloadend = () => {
+            reader.onloadend = async () => {
                 const base64String = reader.result as string;
-                localStorage.setItem('superadmin_background', base64String);
+                await updatePlatformSettings({ backgroundUrl: base64String });
                 setBgPreview(base64String);
                 setBackgroundUrl(base64String);
                 showStatusMessage('Background applied instantly!');
@@ -70,7 +68,7 @@ const AdminSettings: React.FC = () => {
         }
     };
 
-    const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
              if (file.size > 2 * 1024 * 1024) { 
@@ -78,9 +76,9 @@ const AdminSettings: React.FC = () => {
                 return;
             }
             const reader = new FileReader();
-            reader.onloadend = () => {
+            reader.onloadend = async () => {
                 const base64String = reader.result as string;
-                localStorage.setItem('superadmin_logo', base64String);
+                await updatePlatformSettings({ logoUrl: base64String });
                 setLogoPreview(base64String);
                 setLogoUrl(base64String);
                 showStatusMessage('System Logo applied instantly!');
@@ -89,10 +87,10 @@ const AdminSettings: React.FC = () => {
         }
     }
 
-    const handleThemeSave = (e: React.FormEvent) => {
+    const handleThemeSave = async (e: React.FormEvent) => {
         e.preventDefault();
+        await updatePlatformSettings({ accentColor: color });
         setPrimaryColor(color);
-        localStorage.setItem('superadmin_color', color);
         showStatusMessage('Theme color updated!');
     };
     
@@ -114,9 +112,11 @@ const AdminSettings: React.FC = () => {
         }
     };
 
-    const toggleLocator = () => {
-        setLocatorEnabled(!locatorEnabled);
-        showStatusMessage(`Patient Locator ${!locatorEnabled ? 'Enabled' : 'Disabled'}`);
+    const toggleLocator = async () => {
+        const newState = !locatorEnabled;
+        setLocatorEnabled(newState);
+        await updatePlatformSettings({ patientLocatorEnabled: newState });
+        showStatusMessage(`Patient Locator ${newState ? 'Enabled' : 'Disabled'}`);
     };
 
     return (

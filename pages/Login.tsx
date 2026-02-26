@@ -111,14 +111,25 @@ const Login = () => {
         </form>
 
         <div className="mt-12 pt-8 border-t border-slate-50 text-center space-y-6">
-          <div className="text-sm">
-            <span className="text-slate-400 font-medium">Looking for medicine? </span>
-            <Link 
-              to="/patient-signup" 
-              className="text-primary font-bold hover:underline uppercase tracking-tighter"
-            >
-              Patient Access
-            </Link>
+          <div className="text-sm flex flex-col gap-2">
+            <div>
+              <span className="text-slate-400 font-medium">Looking for medicine? </span>
+              <Link 
+                to="/patient-signup" 
+                className="text-primary font-bold hover:underline uppercase tracking-tighter"
+              >
+                Patient Access
+              </Link>
+            </div>
+            <div>
+              <span className="text-slate-400 font-medium">Own a pharmacy? </span>
+              <Link 
+                to="/pharmacy-registration" 
+                className="text-secondary font-bold hover:underline uppercase tracking-tighter"
+              >
+                Register Now
+              </Link>
+            </div>
           </div>
           <div className="flex items-center justify-center gap-2 text-[10px] font-bold text-slate-300 uppercase tracking-widest">
             <Sparkles className="w-3 h-3" />

@@ -12,8 +12,8 @@ const LockClosedIcon = (props: React.SVGProps<SVGSVGElement>) => <svg xmlns="htt
 
 const planColors: Record<SubscriptionPlan, string> = {
     [SubscriptionPlan.BASIC]: 'bg-amber-100 text-amber-800 border-amber-200',
-    [SubscriptionPlan.STANDARD]: 'bg-green-100 text-green-800 border-green-200',
-    [SubscriptionPlan.PLATINUM]: 'bg-sky-100 text-sky-800 border-sky-200',
+    [SubscriptionPlan.PRO]: 'bg-green-100 text-green-800 border-green-200',
+    [SubscriptionPlan.ENTERPRISE]: 'bg-sky-100 text-sky-800 border-sky-200',
     [SubscriptionPlan.PATIENT_FREE]: 'bg-slate-100 text-slate-800 border-slate-200',
     [SubscriptionPlan.PATIENT_PAID]: 'bg-indigo-100 text-indigo-800 border-indigo-200',
 };

@@ -3,7 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import PatientSearch from './patient/PatientSearch';
-import { LogOut, Search, History, Settings, User, Bell, Home, Pill, MapPin, Sparkles } from 'lucide-react';
+import { getSafetySettings } from '../services/mockApi';
+import { SafetySettings } from '../types';
+import { LogOut, Search, History, Settings, User, Bell, Home, Pill, MapPin, Sparkles, ShieldAlert } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 const PatientDashboard: React.FC = () => {
@@ -11,12 +13,42 @@ const PatientDashboard: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [scrolled, setScrolled] = useState(false);
+    const [safety, setSafety] = useState<SafetySettings | null>(null);
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 20);
         window.addEventListener('scroll', handleScroll);
+        getSafetySettings().then(setSafety);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
+
+    if (safety && !safety.platformEnabled) {
+        return (
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6 text-center">
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="max-w-md space-y-8"
+                >
+                    <div className="w-24 h-24 bg-red-500/20 rounded-[2rem] flex items-center justify-center mx-auto text-red-500 shadow-2xl shadow-red-500/20">
+                        <ShieldAlert className="w-12 h-12" />
+                    </div>
+                    <div className="space-y-4">
+                        <h1 className="text-4xl font-black text-white uppercase tracking-tighter">Platform Offline</h1>
+                        <p className="text-slate-400 font-medium leading-relaxed">
+                            The MedIntelliCare patient network is currently undergoing scheduled maintenance or emergency security protocols. Please try again later.
+                        </p>
+                    </div>
+                    <button 
+                        onClick={() => { logout(); navigate('/login'); }}
+                        className="px-8 py-4 bg-white text-slate-900 font-bold rounded-2xl hover:bg-slate-100 transition-all uppercase tracking-widest text-xs"
+                    >
+                        Return to Login
+                    </button>
+                </motion.div>
+            </div>
+        );
+    }
 
     const navItems = [
         { path: '/patient', icon: Home, label: 'Overview' },

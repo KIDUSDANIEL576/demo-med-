@@ -5,7 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../contexts/ThemeContext';
 import { getNavLinks } from '../constants';
 import { UserRole, SubscriptionPlan, Pharmacy } from '../types';
-import { getPharmacyById, checkPlanAccess } from '../services/mockApi';
+import { getPharmacyById, checkPlanAccess, getSidebarStats } from '../services/mockApi';
 import { Pill, ChevronRight, Sparkles, LayoutDashboard, ShoppingCart, Package, BarChart3, Search, Users, Gift, Settings, ShieldCheck, UserCheck, CreditCard, Inbox, MessageSquare, Lightbulb, Cpu, Stethoscope, History, Rocket, MessageCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -47,6 +47,19 @@ const Sidebar = () => {
     const location = useLocation();
     const [pharmacy, setPharmacy] = useState<Pharmacy | null>(null);
     const [allowedNav, setAllowedNav] = useState<any[]>([]);
+    const [stats, setStats] = useState<Record<string, number>>({});
+
+    useEffect(() => {
+        if (user?.role === UserRole.SUPER_ADMIN) {
+            const fetchStats = async () => {
+                const s = await getSidebarStats();
+                setStats(s);
+            };
+            fetchStats();
+            const interval = setInterval(fetchStats, 30000); // Refresh every 30s
+            return () => clearInterval(interval);
+        }
+    }, [user]);
 
     useEffect(() => {
         if ((user?.role === UserRole.PHARMACY_ADMIN || user?.role === UserRole.PHARMACIST || user?.role === UserRole.SALES) && user.pharmacyId) {
@@ -139,11 +152,18 @@ const Sidebar = () => {
                                 <Icon className={`w-5 h-5 transition-transform group-hover:scale-110 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-primary'}`} />
                                 <span className="text-sm font-bold tracking-tight">{link.name}</span>
                             </div>
-                            {isActive && (
-                                <motion.div layoutId="active-pill">
-                                    <ChevronRight className="w-4 h-4 text-white/50" />
-                                </motion.div>
-                            )}
+                            <div className="flex items-center gap-2">
+                                {stats[link.name] > 0 && (
+                                    <span className="bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-lg shadow-red-500/20">
+                                        {stats[link.name]}
+                                    </span>
+                                )}
+                                {isActive && (
+                                    <motion.div layoutId="active-pill">
+                                        <ChevronRight className="w-4 h-4 text-white/50" />
+                                    </motion.div>
+                                )}
+                            </div>
                         </NavLink>
                     );
                 })}
@@ -165,7 +185,7 @@ const Sidebar = () => {
                                     Expires {new Date(pharmacy.planExpiryDate).toLocaleDateString()}
                                 </p>
                             </div>
-                            {pharmacy.plan !== SubscriptionPlan.PLATINUM && (
+                            {pharmacy.plan !== SubscriptionPlan.ENTERPRISE && (
                                 <Link 
                                     to="/dashboard/upgrade-plans" 
                                     className="w-full block text-center py-3 bg-primary text-white text-xs font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all uppercase tracking-widest"

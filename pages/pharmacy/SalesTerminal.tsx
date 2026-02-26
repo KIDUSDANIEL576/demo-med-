@@ -148,8 +148,11 @@ const SalesTerminal: React.FC = () => {
                                     <div className="flex items-center gap-4">
                                         <input
                                             type="number"
-                                            value={item.quantity}
-                                            onChange={(e) => updateQuantity(item.id, parseInt(e.target.value))}
+                                            value={item.quantity || 0}
+                                            onChange={(e) => {
+                                                const val = parseInt(e.target.value);
+                                                updateQuantity(item.id, isNaN(val) ? 0 : val);
+                                            }}
                                             min="1"
                                             max={item.stock}
                                             className="w-16 text-center p-1 bg-white border border-slate-300 rounded-md text-slate-900 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"

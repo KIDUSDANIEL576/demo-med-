@@ -15,16 +15,17 @@ const PatientPlatformControls: React.FC = () => {
     const [analytics, setAnalytics] = useState<PatientPlatformAnalytics | null>(null);
     const [logs, setLogs] = useState<AbuseLog[]>([]);
     const [loading, setLoading] = useState(true);
+    const [timeframe, setTimeframe] = useState<'day' | 'week' | 'month' | 'year'>('month');
 
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [timeframe]);
 
     const fetchData = async () => {
         setLoading(true);
         const [s, a, l] = await Promise.all([
             getSafetySettings(),
-            getPatientPlatformAnalytics(),
+            getPatientPlatformAnalytics(timeframe as any),
             getAbuseLogs()
         ]);
         setSettings(s);
@@ -113,8 +114,11 @@ const PatientPlatformControls: React.FC = () => {
                             min="10" 
                             max="500" 
                             step="10"
-                            value={settings.maxRequestsPerDay}
-                            onChange={(e) => handleRateLimitChange(parseInt(e.target.value))}
+                            value={settings.maxRequestsPerDay || 10}
+                            onChange={(e) => {
+                                const val = parseInt(e.target.value);
+                                handleRateLimitChange(isNaN(val) ? 10 : val);
+                            }}
                             className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                         />
                         <div className="flex justify-between items-end pt-2">
@@ -193,8 +197,21 @@ const PatientPlatformControls: React.FC = () => {
                 </div>
 
                 <div className="bg-white rounded-2xl shadow-md border border-slate-100 overflow-hidden">
-                    <div className="px-6 py-4 bg-slate-50 border-b border-slate-100">
+                    <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
                         <h2 className="font-black text-slate-800 uppercase tracking-wide text-sm">Top Searched Medicines</h2>
+                        <div className="flex bg-white border border-slate-200 rounded-lg p-0.5">
+                            {(['day', 'week', 'month', 'year'] as const).map((t) => (
+                                <button
+                                    key={t}
+                                    onClick={() => setTimeframe(t)}
+                                    className={`px-2 py-1 text-[10px] font-black uppercase rounded transition-all ${
+                                        timeframe === t ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'
+                                    }`}
+                                >
+                                    {t[0]}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                     <div className="p-6 space-y-4">
                         {topSearched.map((item, idx) => (

@@ -9,7 +9,8 @@ import Dashboard from './pages/Dashboard';
 import PrescriptionPrint from './pages/PrescriptionPrint';
 import PatientDashboard from './pages/PatientDashboard';
 import PatientSignup from './pages/patient/PatientSignup';
-import PatientLogin from './pages/patient/PatientLogin'; // Added
+import PatientLogin from './pages/patient/PatientLogin'; 
+import PharmacyRegistration from './pages/pharmacy/PharmacyRegistration';
 import { UserRole } from './types';
 import { getPlatformFeature } from './services/mockApi';
 
@@ -71,6 +72,7 @@ const AppRoutes = () => {
       {/* Patient Platform (Guarded) */}
       <Route path="/patient-signup" element={<PatientPlatformGuard><PatientSignup /></PatientPlatformGuard>} />
       <Route path="/patient-login" element={<PatientPlatformGuard><PatientLogin /></PatientPlatformGuard>} />
+      <Route path="/pharmacy-registration" element={<PharmacyRegistration />} />
       <Route path="/patient/*" element={
           <PatientPlatformGuard>
               <PatientDashboard />

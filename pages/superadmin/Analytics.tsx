@@ -38,8 +38,8 @@ const Analytics: React.FC = () => {
 
     const subscriptionColors: Record<string, string> = {
         [SubscriptionPlan.BASIC]: '#f59e0b', // amber-500
-        [SubscriptionPlan.STANDARD]: '#10b981', // emerald-500
-        [SubscriptionPlan.PLATINUM]: '#0ea5e9', // sky-500
+        [SubscriptionPlan.PRO]: '#10b981', // emerald-500
+        [SubscriptionPlan.ENTERPRISE]: '#0ea5e9', // sky-500
     };
     
     const donutData = (data.subscriptionDistribution || [])

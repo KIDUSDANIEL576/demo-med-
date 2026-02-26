@@ -142,7 +142,7 @@ const PlansAndUpgrade: React.FC = () => {
                                     <button 
                                         onClick={() => handleUpgrade(plan)}
                                         disabled={loading || processingPayment}
-                                        className={`w-full text-center px-6 py-3 text-white font-bold rounded-lg transition-all transform hover:scale-105 shadow-md ${plan.name === SubscriptionPlan.PLATINUM ? 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700' : 'bg-slate-800 hover:bg-slate-900'}`}
+                                        className={`w-full text-center px-6 py-3 text-white font-bold rounded-lg transition-all transform hover:scale-105 shadow-md ${plan.name === SubscriptionPlan.ENTERPRISE ? 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700' : 'bg-slate-800 hover:bg-slate-900'}`}
                                     >
                                         {processingPayment ? 'Processing...' : `Upgrade to ${plan.name}`}
                                     </button>

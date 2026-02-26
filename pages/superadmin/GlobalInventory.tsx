@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import DataTable from '../../components/DataTable';
 import { getAllInventory, getPharmacies, toggleRecallStatus } from '../../services/mockApi';
-import { InventoryItem, Pharmacy, UserRole } from '../../types';
+import { InventoryItem, Pharmacy, UserRole, SubscriptionPlan } from '../../types';
 import { ExclamationTriangleIcon, BuildingStorefrontIcon, XIcon } from '../../constants';
 import { useAuth } from '../../hooks/useAuth';
 import { Navigate } from 'react-router-dom';
@@ -178,7 +178,7 @@ const GlobalInventory: React.FC = () => {
                                     </div>
                                     <div className="flex justify-between border-b border-slate-100 pb-2">
                                         <span className="text-slate-600">Subscription Plan:</span>
-                                        <span className={`font-bold px-2 py-0.5 rounded text-xs uppercase ${selectedPharmacy.plan === 'Platinum' ? 'bg-sky-100 text-sky-800' : 'bg-green-100 text-green-800'}`}>
+                                        <span className={`font-bold px-2 py-0.5 rounded text-xs uppercase ${selectedPharmacy.plan === SubscriptionPlan.ENTERPRISE ? 'bg-sky-100 text-sky-800' : 'bg-green-100 text-green-800'}`}>
                                             {selectedPharmacy.plan}
                                         </span>
                                     </div>

@@ -44,7 +44,12 @@ const InventoryItemModal: React.FC<InventoryItemModalProps> = ({ item, onClose, 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         const isNumber = ['stock', 'costPrice', 'price'].includes(name);
-        setFormData(prev => ({ ...prev, [name]: isNumber ? parseFloat(value) : value }));
+        if (isNumber) {
+            const parsed = parseFloat(value);
+            setFormData(prev => ({ ...prev, [name]: isNaN(parsed) ? 0 : parsed }));
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }));
+        }
     };
 
     const handleSubmit = (e: React.FormEvent) => {

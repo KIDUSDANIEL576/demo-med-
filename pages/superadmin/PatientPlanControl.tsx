@@ -90,8 +90,11 @@ const PatientPlanControl: React.FC = () => {
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Monthly Price ($)</label>
                                     <input 
                                         type="number" 
-                                        value={config.monthlyPrice}
-                                        onChange={(e) => setConfigs(configs.map(c => c.id === config.id ? {...c, monthlyPrice: parseFloat(e.target.value)} : c))}
+                                        value={config.monthlyPrice || 0}
+                                        onChange={(e) => {
+                                            const val = parseFloat(e.target.value);
+                                            setConfigs(configs.map(c => c.id === config.id ? {...c, monthlyPrice: isNaN(val) ? 0 : val} : c));
+                                        }}
                                         className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-black text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500/20"
                                     />
                                 </div>
@@ -99,8 +102,11 @@ const PatientPlanControl: React.FC = () => {
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Monthly Limit (Req)</label>
                                     <input 
                                         type="number" 
-                                        value={config.requestLimit}
-                                        onChange={(e) => setConfigs(configs.map(c => c.id === config.id ? {...c, requestLimit: parseInt(e.target.value)} : c))}
+                                        value={config.requestLimit || 0}
+                                        onChange={(e) => {
+                                            const val = parseInt(e.target.value);
+                                            setConfigs(configs.map(c => c.id === config.id ? {...c, requestLimit: isNaN(val) ? 0 : val} : c));
+                                        }}
                                         className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-black text-slate-800 outline-none focus:ring-2 focus:ring-indigo-500/20"
                                     />
                                 </div>

@@ -11,12 +11,13 @@ interface ConfirmationModalProps {
     cancelText?: string;
     isDangerous?: boolean;
     isLoading?: boolean;
+    children?: React.ReactNode;
 }
 
 const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     isOpen, onClose, onConfirm, title, message, 
     confirmText = 'Delete', cancelText = 'Cancel', 
-    isDangerous = true, isLoading = false
+    isDangerous = true, isLoading = false, children
 }) => {
     if (!isOpen) return null;
 
@@ -35,7 +36,14 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 animate-fade-in backdrop-blur-sm">
             <div className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-sm border-t-4 border-slate-500 transform transition-all scale-100" style={{ borderTopColor: isDangerous ? '#ef4444' : '#10b981' }}>
                 <h2 className="text-xl font-bold mb-2 text-slate-800">{title}</h2>
-                <p className="text-slate-600 mb-6">{message}</p>
+                <p className="text-slate-600 mb-4">{message}</p>
+                
+                {children && (
+                    <div className="mb-6">
+                        {children}
+                    </div>
+                )}
+
                 <div className="flex justify-end gap-3">
                     <button 
                         onClick={onClose} 

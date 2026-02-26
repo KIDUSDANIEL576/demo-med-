@@ -3,10 +3,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import DataTable from '../../components/DataTable';
 import { updateInventoryItem, deleteInventoryItem, addInventoryItem, getPharmacies, exportData } from '../../services/mockApi';
-import { InventoryItem, InventoryCategory, Pharmacy, SubscriptionPlan } from '../../types';
+import { InventoryItem, InventoryCategory, Pharmacy, SubscriptionPlan, Medicine, InventoryBatch, StockMovement, StockMovementType } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
 import { usePlanAccess } from '../../hooks/usePlanAccess'; 
-import { Pill, Download, Upload, Plus, Pencil, Trash2, AlertTriangle, Package, Search as SearchIcon } from 'lucide-react';
+import { Pill, Download, Upload, Plus, Pencil, Trash2, AlertTriangle, Package, Search as SearchIcon, History, Layers, ClipboardList } from 'lucide-react';
 import InventoryItemModal from '../../components/InventoryItemModal';
 import BulkImportModal from '../../components/BulkImportModal';
 import { useInventory } from '../../contexts/InventoryContext';
@@ -30,8 +30,15 @@ const getRowClass = (item: InventoryItem) => {
 const InventoryManagement: React.FC = () => {
     const { user } = useAuth();
     const location = useLocation();
-    const { inventory, loading, fetchInventory } = useInventory();
+    const { 
+        inventory, medicines, batches, movements, loading, 
+        fetchInventory, fetchMedicines, fetchBatches, fetchMovements 
+    } = useInventory();
     const { hasAccess, checkAccess } = usePlanAccess();
+    
+    // UI States
+    const [activeTab, setActiveTab] = useState<'stock' | 'batches' | 'movements' | 'medicines'>('stock');
+    const [searchQuery, setSearchQuery] = useState('');
     
     // Modal States
     const [isImportSelectorOpen, setIsImportSelectorOpen] = useState(false);
@@ -40,19 +47,21 @@ const InventoryManagement: React.FC = () => {
     
     const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
     const [pharmacy, setPharmacy] = useState<Pharmacy | null>(null);
-    const [searchQuery, setSearchQuery] = useState('');
 
     const filter = location.state?.filter;
 
     useEffect(() => {
         fetchInventory();
+        fetchMedicines();
+        fetchBatches();
+        fetchMovements();
         checkAccess('export_reports');
         if (user?.pharmacyId) {
             getPharmacies().then(allPharmacies => {
                 setPharmacy(allPharmacies.find(p => p.id === user.pharmacyId) || null);
             });
         }
-    }, [fetchInventory, user?.pharmacyId, user?.id]);
+    }, [fetchInventory, fetchMedicines, fetchBatches, fetchMovements, user?.pharmacyId, user?.id]);
     
     const filteredInventory = useMemo(() => {
         if (!inventory) return [];
@@ -75,13 +84,33 @@ const InventoryManagement: React.FC = () => {
         
         return result;
     }, [inventory, filter, searchQuery]);
+
+    const filteredBatches = useMemo(() => {
+        if (!batches) return [];
+        let result = batches;
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            result = result.filter(b => b.batchNumber.toLowerCase().includes(q));
+        }
+        return result;
+    }, [batches, searchQuery]);
+
+    const filteredMovements = useMemo(() => {
+        if (!movements) return [];
+        let result = movements;
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            result = result.filter(m => m.type.toLowerCase().includes(q) || m.referenceId?.toLowerCase().includes(q));
+        }
+        return [...result].reverse(); // Show latest first
+    }, [movements, searchQuery]);
     
     const getLimit = (plan?: SubscriptionPlan) => {
         if (!plan) return 50; 
         switch (plan) {
             case SubscriptionPlan.BASIC: return 50;
-            case SubscriptionPlan.STANDARD: return 100;
-            case SubscriptionPlan.PLATINUM: return 999999; 
+            case SubscriptionPlan.PRO: return 100;
+            case SubscriptionPlan.ENTERPRISE: return 999999; 
             default: return 50;
         }
     }
@@ -105,6 +134,10 @@ const InventoryManagement: React.FC = () => {
     };
 
     const handleSelectBulk = () => {
+        if (pharmacy?.plan !== SubscriptionPlan.ENTERPRISE) {
+            alert('Bulk Upload is only available on the Enterprise Plan. Please upgrade to access this feature.');
+            return;
+        }
         setIsImportSelectorOpen(false);
         setIsBulkModalOpen(true);
     };
@@ -165,7 +198,7 @@ const InventoryManagement: React.FC = () => {
         }
     };
 
-    const columns = [
+    const stockColumns = [
         { key: 'medicineName', header: 'Item Name' },
         { key: 'category', header: 'Category' },
         { key: 'batchNumber', header: 'Batch' },
@@ -174,6 +207,25 @@ const InventoryManagement: React.FC = () => {
         { key: 'expiryDate', header: 'Expiry' },
         { key: 'brand', header: 'Brand' },
         { key: 'actions', header: 'Actions' },
+    ];
+
+    const batchColumns = [
+        { key: 'medicine', header: 'Medicine' },
+        { key: 'batchNumber', header: 'Batch #' },
+        { key: 'expiryDate', header: 'Expiry' },
+        { key: 'quantity', header: 'Quantity' },
+        { key: 'purchasePrice', header: 'Cost' },
+        { key: 'sellingPrice', header: 'Price' },
+        { key: 'createdAt', header: 'Received' },
+    ];
+
+    const movementColumns = [
+        { key: 'createdAt', header: 'Date' },
+        { key: 'medicine', header: 'Medicine' },
+        { key: 'type', header: 'Type' },
+        { key: 'quantity', header: 'Qty' },
+        { key: 'batch', header: 'Batch' },
+        { key: 'reference', header: 'Reference' },
     ];
 
     if (loading) {
@@ -224,68 +276,196 @@ const InventoryManagement: React.FC = () => {
                 </div>
             </div>
 
+            {/* Tabs */}
+            <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-2xl w-fit">
+                <button 
+                    onClick={() => setActiveTab('stock')}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'stock' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    <Package className="w-4 h-4" />
+                    Current Stock
+                </button>
+                <button 
+                    onClick={() => setActiveTab('batches')}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'batches' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    <Layers className="w-4 h-4" />
+                    Batch Tracking
+                </button>
+                <button 
+                    onClick={() => setActiveTab('movements')}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'movements' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    <History className="w-4 h-4" />
+                    Stock Movements
+                </button>
+                <button 
+                    onClick={() => setActiveTab('medicines')}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'medicines' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    <ClipboardList className="w-4 h-4" />
+                    Medicine Catalog
+                </button>
+            </div>
+
             <div className="flex flex-col md:flex-row gap-6 items-center justify-between">
                 <div className="relative w-full md:w-96 group">
                     <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 group-focus-within:text-primary transition-colors" />
                     <input 
                         type="text" 
-                        placeholder="Search inventory..." 
+                        placeholder={`Search ${activeTab}...`} 
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full pl-12 pr-4 py-4 bg-white border border-slate-100 rounded-2xl focus:ring-4 focus:ring-primary/10 outline-none transition-all font-bold text-slate-700"
                     />
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-red-100">
-                        <AlertTriangle className="w-3 h-3" />
-                        Expiring
+                {activeTab === 'stock' && (
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-red-100">
+                            <AlertTriangle className="w-3 h-3" />
+                            Expiring
+                        </div>
+                        <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-amber-100">
+                            <AlertTriangle className="w-3 h-3" />
+                            Low Stock
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-amber-100">
-                        <AlertTriangle className="w-3 h-3" />
-                        Low Stock
-                    </div>
-                </div>
+                )}
             </div>
 
-            <DataTable<InventoryItem>
-                columns={columns}
-                data={filteredInventory}
-                renderRow={(item) => (
-                    <>
-                        <td className={`px-8 py-6 whitespace-nowrap ${getRowClass(item)}`}>
-                            <div className="flex flex-col">
-                                <span className="text-sm font-black text-slate-900">{item.medicineName}</span>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{item.sku || 'NO SKU'}</span>
-                            </div>
-                        </td>
-                        <td className={`px-8 py-6 whitespace-nowrap text-xs font-bold text-slate-500 uppercase tracking-widest ${getRowClass(item)}`}>{item.category}</td>
-                        <td className={`px-8 py-6 whitespace-nowrap text-xs font-mono text-slate-400 ${getRowClass(item)}`}>{item.batchNumber || '-'}</td>
-                        <td className={`px-8 py-6 whitespace-nowrap ${getRowClass(item)}`}>
-                            <span className={`px-3 py-1 rounded-lg text-xs font-black ${item.stock < 50 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'}`}>
-                                {item.stock}
-                            </span>
-                        </td>
-                        <td className={`px-8 py-6 whitespace-nowrap text-sm font-black text-slate-900 ${getRowClass(item)}`}>${item.price.toFixed(2)}</td>
-                        <td className={`px-8 py-6 whitespace-nowrap ${getRowClass(item)}`}>
-                            <span className={`text-xs font-bold ${isExpiringSoon(item.expiryDate) ? 'text-red-600' : 'text-slate-500'}`}>
-                                {item.expiryDate}
-                            </span>
-                        </td>
-                        <td className={`px-8 py-6 whitespace-nowrap text-xs font-bold text-slate-500 ${getRowClass(item)}`}>{item.brand || '-'}</td>
-                        <td className={`px-8 py-6 whitespace-nowrap ${getRowClass(item)}`}>
-                            <div className="flex items-center gap-2">
-                                <button onClick={() => handleEdit(item)} className="p-2 hover:bg-white rounded-xl text-slate-400 hover:text-primary transition-all hover:shadow-md">
-                                    <Pencil className="w-4 h-4" />
-                                </button>
-                                <button onClick={() => handleDelete(item.id)} className="p-2 hover:bg-white rounded-xl text-slate-400 hover:text-red-500 transition-all hover:shadow-md">
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </td>
-                    </>
-                )}
-            />
+            {activeTab === 'stock' && (
+                <DataTable<InventoryItem>
+                    columns={stockColumns}
+                    data={filteredInventory}
+                    renderRow={(item) => (
+                        <>
+                            <td className={`px-8 py-6 whitespace-nowrap ${getRowClass(item)}`}>
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-black text-slate-900">{item.medicineName}</span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{item.sku || 'NO SKU'}</span>
+                                </div>
+                            </td>
+                            <td className={`px-8 py-6 whitespace-nowrap text-xs font-bold text-slate-500 uppercase tracking-widest ${getRowClass(item)}`}>{item.category}</td>
+                            <td className={`px-8 py-6 whitespace-nowrap text-xs font-mono text-slate-400 ${getRowClass(item)}`}>{item.batchNumber || '-'}</td>
+                            <td className={`px-8 py-6 whitespace-nowrap ${getRowClass(item)}`}>
+                                <span className={`px-3 py-1 rounded-lg text-xs font-black ${item.stock < 50 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'}`}>
+                                    {item.stock}
+                                </span>
+                            </td>
+                            <td className={`px-8 py-6 whitespace-nowrap text-sm font-black text-slate-900 ${getRowClass(item)}`}>${item.price.toFixed(2)}</td>
+                            <td className={`px-8 py-6 whitespace-nowrap ${getRowClass(item)}`}>
+                                <span className={`text-xs font-bold ${isExpiringSoon(item.expiryDate) ? 'text-red-600' : 'text-slate-500'}`}>
+                                    {item.expiryDate}
+                                </span>
+                            </td>
+                            <td className={`px-8 py-6 whitespace-nowrap text-xs font-bold text-slate-500 ${getRowClass(item)}`}>{item.brand || '-'}</td>
+                            <td className={`px-8 py-6 whitespace-nowrap ${getRowClass(item)}`}>
+                                <div className="flex items-center gap-2">
+                                    <button onClick={() => handleEdit(item)} className="p-2 hover:bg-white rounded-xl text-slate-400 hover:text-primary transition-all hover:shadow-md">
+                                        <Pencil className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={() => handleDelete(item.id)} className="p-2 hover:bg-white rounded-xl text-slate-400 hover:text-red-500 transition-all hover:shadow-md">
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </td>
+                        </>
+                    )}
+                />
+            )}
+
+            {activeTab === 'batches' && (
+                <DataTable<InventoryBatch>
+                    columns={batchColumns}
+                    data={filteredBatches}
+                    renderRow={(batch) => {
+                        const med = medicines.find(m => m.id === batch.medicineId);
+                        return (
+                            <>
+                                <td className="px-8 py-6 whitespace-nowrap">
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-black text-slate-900">{med?.name || 'Unknown'}</span>
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{med?.genericName}</span>
+                                    </div>
+                                </td>
+                                <td className="px-8 py-6 whitespace-nowrap text-xs font-mono text-slate-600">{batch.batchNumber}</td>
+                                <td className="px-8 py-6 whitespace-nowrap">
+                                    <span className={`text-xs font-bold ${isExpiringSoon(batch.expiryDate) ? 'text-red-600' : 'text-slate-500'}`}>
+                                        {batch.expiryDate}
+                                    </span>
+                                </td>
+                                <td className="px-8 py-6 whitespace-nowrap">
+                                    <span className="px-3 py-1 bg-slate-100 rounded-lg text-xs font-black text-slate-700">
+                                        {batch.quantity}
+                                    </span>
+                                </td>
+                                <td className="px-8 py-6 whitespace-nowrap text-sm font-bold text-slate-600">${batch.purchasePrice.toFixed(2)}</td>
+                                <td className="px-8 py-6 whitespace-nowrap text-sm font-black text-slate-900">${batch.sellingPrice.toFixed(2)}</td>
+                                <td className="px-8 py-6 whitespace-nowrap text-[10px] font-mono text-slate-400">{batch.createdAt.split('T')[0]}</td>
+                            </>
+                        );
+                    }}
+                />
+            )}
+
+            {activeTab === 'movements' && (
+                <DataTable<StockMovement>
+                    columns={movementColumns}
+                    data={filteredMovements}
+                    renderRow={(mov) => {
+                        const med = medicines.find(m => m.id === mov.medicineId);
+                        const batch = batches.find(b => b.id === mov.batchId);
+                        return (
+                            <>
+                                <td className="px-8 py-6 whitespace-nowrap text-[10px] font-mono text-slate-400">{mov.createdAt.replace('T', ' ').split('.')[0]}</td>
+                                <td className="px-8 py-6 whitespace-nowrap text-sm font-bold text-slate-900">{med?.name || 'Unknown'}</td>
+                                <td className="px-8 py-6 whitespace-nowrap">
+                                    <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${
+                                        mov.type === StockMovementType.PURCHASE ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                        mov.type === StockMovementType.SALE ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                        mov.type === StockMovementType.ADJUSTMENT ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                        'bg-slate-50 text-slate-600 border-slate-100'
+                                    }`}>
+                                        {mov.type}
+                                    </span>
+                                </td>
+                                <td className="px-8 py-6 whitespace-nowrap">
+                                    <span className={`text-sm font-black ${mov.quantity < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                                        {mov.quantity > 0 ? '+' : ''}{mov.quantity}
+                                    </span>
+                                </td>
+                                <td className="px-8 py-6 whitespace-nowrap text-xs font-mono text-slate-400">{batch?.batchNumber || '-'}</td>
+                                <td className="px-8 py-6 whitespace-nowrap text-xs font-bold text-slate-500">{mov.referenceId || '-'}</td>
+                            </>
+                        );
+                    }}
+                />
+            )}
+
+            {activeTab === 'medicines' && (
+                <DataTable<Medicine>
+                    columns={[
+                        { key: 'name', header: 'Name' },
+                        { key: 'genericName', header: 'Generic' },
+                        { key: 'strength', header: 'Strength' },
+                        { key: 'dosageForm', header: 'Form' },
+                        { key: 'manufacturer', header: 'Manufacturer' },
+                        { key: 'category', header: 'Category' },
+                    ]}
+                    data={medicines}
+                    renderRow={(med) => (
+                        <>
+                            <td className="px-8 py-6 whitespace-nowrap text-sm font-black text-slate-900">{med.name}</td>
+                            <td className="px-8 py-6 whitespace-nowrap text-xs font-bold text-slate-500 italic">{med.genericName}</td>
+                            <td className="px-8 py-6 whitespace-nowrap text-xs font-bold text-slate-600">{med.strength}</td>
+                            <td className="px-8 py-6 whitespace-nowrap text-xs font-bold text-slate-400 uppercase tracking-widest">{med.dosageForm}</td>
+                            <td className="px-8 py-6 whitespace-nowrap text-xs font-bold text-slate-500">{med.manufacturer}</td>
+                            <td className="px-8 py-6 whitespace-nowrap text-xs font-black text-primary uppercase tracking-widest">{med.category}</td>
+                        </>
+                    )}
+                />
+            )}
             
             {/* Import Selector Modal */}
             <AnimatePresence>
