@@ -1,5 +1,5 @@
 
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useMemo, useCallback } from 'react';
 
 type Theme = 'default' | 'christmas';
 
@@ -22,25 +22,27 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null);
 
-  const setTheme = (theme: Theme) => {
+  const setTheme = useCallback((theme: Theme) => {
     setThemeState(theme);
     if (theme === 'christmas') {
         // Reset custom color if a theme is chosen
         setPrimaryColor(null);
     }
-  }
+  }, []);
+
+  const value = useMemo(() => ({ 
+      theme, 
+      setTheme, 
+      primaryColor, 
+      setPrimaryColor, 
+      logoUrl, 
+      setLogoUrl, 
+      backgroundUrl, 
+      setBackgroundUrl 
+  }), [theme, setTheme, primaryColor, logoUrl, backgroundUrl]);
 
   return (
-    <ThemeContext.Provider value={{ 
-        theme, 
-        setTheme, 
-        primaryColor, 
-        setPrimaryColor, 
-        logoUrl, 
-        setLogoUrl, 
-        backgroundUrl, 
-        setBackgroundUrl 
-    }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

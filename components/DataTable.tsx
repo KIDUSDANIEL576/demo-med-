@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { motion } from 'motion/react';
 
 interface DataTableProps<T> {
@@ -66,5 +66,5 @@ const DataTable = <T extends { id: any }>(
   );
 };
 
-export default DataTable;
+export default memo(DataTable) as typeof DataTable;
 

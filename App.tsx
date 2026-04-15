@@ -14,6 +14,8 @@ import PharmacyRegistration from './pages/pharmacy/PharmacyRegistration';
 import { UserRole } from './types';
 import { getPlatformFeature } from './services/mockApi';
 
+import { InventoryProvider } from './contexts/InventoryContext';
+
 const ProtectedRoute: React.FC<{ children: React.ReactElement; roles: UserRole[] }> = ({ children, roles }) => {
   const { user } = useAuth();
   if (!user || !roles.includes(user.role)) {
@@ -89,9 +91,11 @@ const App = () => {
     <AuthProvider>
       <ThemeProvider>
         <NotificationProvider>
+          <InventoryProvider>
             <HashRouter>
               <AppRoutes />
             </HashRouter>
+          </InventoryProvider>
         </NotificationProvider>
       </ThemeProvider>
     </AuthProvider>

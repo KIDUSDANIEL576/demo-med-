@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { checkPlanAccess } from '../services/mockApi';
 
@@ -9,14 +9,11 @@ export const usePlanAccess = () => {
     const [loadingKeys, setLoadingKeys] = useState<Set<string>>(new Set());
 
     // Helper to check if we already know the access level
-    const hasAccess = (featureKey: string): boolean => {
-        // If not loaded yet, default to false (secure by default)
-        // In a real app, you might want a suspense state or a promise-based check
-        // For UI rendering, we usually hide if unsure.
+    const hasAccess = useCallback((featureKey: string): boolean => {
         return accessCache[featureKey] === true;
-    };
+    }, [accessCache]);
 
-    const checkAccess = async (featureKey: string) => {
+    const checkAccess = useCallback(async (featureKey: string) => {
         if (!user || accessCache[featureKey] !== undefined) return;
         
         setLoadingKeys(prev => new Set(prev).add(featureKey));
@@ -34,7 +31,7 @@ export const usePlanAccess = () => {
                 return next;
             });
         }
-    };
+    }, [user, accessCache]);
 
     // Pre-load common keys on mount if user exists
     useEffect(() => {

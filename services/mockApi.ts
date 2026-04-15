@@ -984,9 +984,28 @@ export const processPrescriptionSale = async (p: Prescription, id: number) => {
 };
 
 export const processManualSale = async (items: { itemId: number, quantity: number }[], soldBy: string) => {
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
     for (const item of items) {
         const batch = inventoryBatches.find(b => Number(b.id.split('-')[1]) === item.itemId || b.id === String(item.itemId));
         if (batch) {
+            const medicine = medicines.find(m => m.id === batch.medicineId);
+            
+            // Record sale for reporting
+            sales.push({
+                id: sales.length + 1,
+                pharmacyId: Number(batch.organizationId),
+                medicineName: medicine?.name || 'Unknown',
+                quantity: item.quantity,
+                totalPrice: batch.sellingPrice * item.quantity,
+                profitMargin: (batch.sellingPrice - batch.purchasePrice) * item.quantity,
+                soldBy: soldBy,
+                date: dateStr,
+                timestamp: timeStr
+            });
+
             await recordStockMovement({
                 organizationId: batch.organizationId,
                 medicineId: batch.medicineId,
@@ -1003,7 +1022,67 @@ export const getPrescriptionByCode = async (c: string) => Promise.resolve(null);
 export const getPrescriptionById = async (id: number) => Promise.resolve(null);
 export const createPrescription = async (d: any) => Promise.resolve({ id: Date.now() } as any);
 export const getDoctorDashboardData = async (id: string) => Promise.resolve({ prescriptionsCreated: 10, lastPrescriptionCode: 'RX-999' });
-export const getPharmacyAdminDashboardData = async (id: number) => Promise.resolve({ totalSalesToday: 100, lowStockItems: 2, prescriptionsFilled: 5, expiringItems: 1 });
+export const getPharmacyAdminDashboardData = async (id: number) => {
+    const today = new Date().toISOString().split('T')[0];
+    const pharmacySales = sales.filter(s => s.pharmacyId === id && s.date === today);
+    const totalSalesToday = pharmacySales.reduce((acc, s) => acc + s.totalPrice, 0);
+    
+    const pharmacyBatches = inventoryBatches.filter(b => Number(b.organizationId) === id);
+    const lowStockItems = pharmacyBatches.filter(b => b.quantity < 50).length;
+    
+    const now = new Date();
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(now.getDate() + 30);
+    
+    const expiringItems = pharmacyBatches.filter(b => {
+        const expiry = new Date(b.expiryDate);
+        return expiry <= thirtyDaysFromNow;
+    }).length;
+
+    const prescriptionsFilled = pharmacySales.length; // Simplified metric
+
+    return Promise.resolve({ 
+        totalSalesToday, 
+        lowStockItems, 
+        prescriptionsFilled, 
+        expiringItems 
+    });
+};
+
+export const getProfitLossData = async (pharmacyId: number) => {
+    const pharmacySales = sales.filter(s => s.pharmacyId === pharmacyId);
+    const totalRevenue = pharmacySales.reduce((acc, s) => acc + s.totalPrice, 0);
+    const totalProfit = pharmacySales.reduce((acc, s) => acc + s.profitMargin, 0);
+    const totalCost = totalRevenue - totalProfit;
+
+    return Promise.resolve({
+        totalRevenue,
+        totalCost,
+        totalProfit,
+        margin: totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
+    });
+};
+
+export const getDeadStock = async (pharmacyId: number) => {
+    const pharmacyBatches = inventoryBatches.filter(b => Number(b.organizationId) === pharmacyId);
+    const pharmacySales = sales.filter(s => s.pharmacyId === pharmacyId);
+    
+    const soldMedicineNames = new Set(pharmacySales.map(s => s.medicineName));
+    
+    const deadStock = pharmacyBatches.filter(batch => {
+        const medicine = medicines.find(m => m.id === batch.medicineId);
+        return medicine && !soldMedicineNames.has(medicine.name);
+    }).map(batch => {
+        const medicine = medicines.find(m => m.id === batch.medicineId);
+        return {
+            name: medicine?.name || 'Unknown',
+            quantity: batch.quantity,
+            value: batch.quantity * batch.purchasePrice
+        };
+    });
+
+    return Promise.resolve(deadStock);
+};
 export const searchPublicInventory = async (q: string) => Promise.resolve([]);
 export const initiatePaidRequest = async (p: string, i: any) => Promise.resolve({ id: 'req-1' } as any);
 export const confirmPaidRequest = async (id: string, tx: string) => Promise.resolve();

@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { useAuth } from '../hooks/useAuth';
@@ -41,7 +41,6 @@ import CreatePrescription from './doctor/CreatePrescription';
 import DoctorProfile from './doctor/Profile';
 import ReferralProgram from './ReferralProgram';
 import PatientSearch from './patient/PatientSearch';
-import { InventoryProvider } from '../contexts/InventoryContext';
 import UpgradePlan from '../components/UpgradePlan';
 
 
@@ -53,7 +52,24 @@ const Dashboard = () => {
         return <Navigate to="/login" />;
     }
 
-    const renderSuperAdminRoutes = () => (
+    const pharmacyAdminRoutes = useMemo(() => (
+        <Routes>
+            <Route index element={<PharmacyDashboard />} />
+            {/* PLAN GATING: MARKETPLACE ACCESS PROTECTION */}
+            <Route path="marketplace" element={ 
+                hasAccess('marketplace') ? <MarketplacePortal /> : <UpgradePlan featureName="B2B Marketplace" /> 
+            } />
+            <Route path="inventory" element={<InventoryManagement />} />
+            <Route path="sales/*" element={ hasAccess('sales_module') ? <SalesPage /> : <UpgradePlan featureName="Sales Terminal" /> } />
+            <Route path="prescription-lookup" element={hasAccess('prescription_lookup') ? <PrescriptionLookup /> : <UpgradePlan featureName="Prescription Lookup" />} />
+            <Route path="staff" element={hasAccess('staff_management') ? <StaffManagement /> : <UpgradePlan featureName="Staff Management" />} />
+            <Route path="referral" element={<ReferralProgram />} />
+            <Route path="settings" element={<PharmacySettings />} />
+            <Route path="upgrade-plans" element={<PlansAndUpgrade />} />
+        </Routes>
+    ), [hasAccess]);
+
+    const superAdminRoutes = useMemo(() => (
         <Routes>
             <Route index element={<SuperAdminDashboard />} />
             <Route path="analytics" element={<Analytics />} />
@@ -79,33 +95,12 @@ const Dashboard = () => {
             <Route path="patient-approvals" element={<PatientApprovals />} />
             <Route path="patient-plans" element={<Plans />} />
         </Routes>
-    );
-
-    const renderPharmacyAdminRoutes = () => {
-        return (
-            <InventoryProvider>
-                <Routes>
-                    <Route index element={<PharmacyDashboard />} />
-                    {/* PLAN GATING: MARKETPLACE ACCESS PROTECTION */}
-                    <Route path="marketplace" element={ 
-                        hasAccess('marketplace') ? <MarketplacePortal /> : <UpgradePlan featureName="B2B Marketplace" /> 
-                    } />
-                    <Route path="inventory" element={<InventoryManagement />} />
-                    <Route path="sales/*" element={ hasAccess('sales_module') ? <SalesPage /> : <UpgradePlan featureName="Sales Terminal" /> } />
-                    <Route path="prescription-lookup" element={hasAccess('prescription_lookup') ? <PrescriptionLookup /> : <UpgradePlan featureName="Prescription Lookup" />} />
-                    <Route path="staff" element={hasAccess('staff_management') ? <StaffManagement /> : <UpgradePlan featureName="Staff Management" />} />
-                    <Route path="referral" element={<ReferralProgram />} />
-                    <Route path="settings" element={<PharmacySettings />} />
-                    <Route path="upgrade-plans" element={<PlansAndUpgrade />} />
-                </Routes>
-            </InventoryProvider>
-        );
-    };
+    ), []);
     
     const renderRoutesByRole = () => {
         switch (user.role) {
-            case UserRole.SUPER_ADMIN: return renderSuperAdminRoutes();
-            case UserRole.PHARMACY_ADMIN: return renderPharmacyAdminRoutes();
+            case UserRole.SUPER_ADMIN: return superAdminRoutes;
+            case UserRole.PHARMACY_ADMIN: return pharmacyAdminRoutes;
             default: return <Navigate to="/login" />;
         }
     };

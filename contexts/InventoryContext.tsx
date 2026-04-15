@@ -1,5 +1,5 @@
 
-import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect, useMemo } from 'react';
 import { InventoryItem, Prescription, Medicine, InventoryBatch, StockMovement } from '../types';
 import { 
     getPharmacyInventory, 
@@ -73,28 +73,28 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
         fetchMovements();
     }, [fetchInventory, fetchMedicines, fetchBatches, fetchMovements]);
 
-    const addMedicine = async (m: Omit<Medicine, 'id'>) => {
+    const addMedicine = useCallback(async (m: Omit<Medicine, 'id'>) => {
         const newMed = await apiAddMedicine(m);
         setMedicines(prev => [...prev, newMed]);
         return newMed;
-    };
+    }, []);
 
-    const addBatch = async (b: Omit<InventoryBatch, 'id' | 'createdAt'>) => {
+    const addBatch = useCallback(async (b: Omit<InventoryBatch, 'id' | 'createdAt'>) => {
         const newBatch = await apiAddBatch(b);
         setBatches(prev => [...prev, newBatch]);
         fetchInventory(); // Refresh derived inventory
         return newBatch;
-    };
+    }, [fetchInventory]);
 
-    const recordMovement = async (m: Omit<StockMovement, 'id' | 'createdAt'>) => {
+    const recordMovement = useCallback(async (m: Omit<StockMovement, 'id' | 'createdAt'>) => {
         const newMovement = await apiRecordMovement(m);
         setMovements(prev => [...prev, newMovement]);
         fetchInventory(); // Refresh derived inventory
         fetchBatches(); // Refresh batches
         return newMovement;
-    };
+    }, [fetchInventory, fetchBatches]);
 
-    const processSale = async (prescription: Prescription): Promise<{ success: boolean; message: string; }> => {
+    const processSale = useCallback(async (prescription: Prescription): Promise<{ success: boolean; message: string; }> => {
         if (!user?.pharmacyId) {
             return { success: false, message: 'User not associated with a pharmacy.' };
         }
@@ -107,9 +107,9 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
             fetchMovements();
         }
         return { success: result.success, message: result.message };
-    };
+    }, [user?.pharmacyId, fetchInventory, fetchBatches, fetchMovements]);
 
-    const processManualSale = async (items: { itemId: number, quantity: number }[], soldBy: string): Promise<{ success: boolean; message: string; }> => {
+    const processManualSale = useCallback(async (items: { itemId: number, quantity: number }[], soldBy: string): Promise<{ success: boolean; message: string; }> => {
         if (!user?.pharmacyId) {
             return { success: false, message: 'User not associated with a pharmacy.' };
         }
@@ -120,15 +120,22 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
             fetchMovements();
         }
         return result;
-    };
+    }, [user?.pharmacyId, fetchInventory, fetchBatches, fetchMovements]);
+
+    const value = useMemo(() => ({ 
+        inventory, medicines, batches, movements, loading, 
+        fetchInventory, fetchMedicines, fetchBatches, fetchMovements,
+        addMedicine, addBatch, recordMovement,
+        processSale, processManualSale 
+    }), [
+        inventory, medicines, batches, movements, loading, 
+        fetchInventory, fetchMedicines, fetchBatches, fetchMovements,
+        addMedicine, addBatch, recordMovement,
+        processSale, processManualSale
+    ]);
 
     return (
-        <InventoryContext.Provider value={{ 
-            inventory, medicines, batches, movements, loading, 
-            fetchInventory, fetchMedicines, fetchBatches, fetchMovements,
-            addMedicine, addBatch, recordMovement,
-            processSale, processManualSale 
-        }}>
+        <InventoryContext.Provider value={value}>
             {children}
         </InventoryContext.Provider>
     );

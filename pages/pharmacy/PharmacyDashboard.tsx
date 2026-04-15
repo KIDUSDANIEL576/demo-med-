@@ -3,18 +3,20 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import DashboardCard from '../../components/DashboardCard';
-import { getPharmacyAdminDashboardData } from '../../services/mockApi';
-import { DollarSign, PackageX, FileCheck, AlertCircle, TrendingUp, ArrowRight, Activity, Clock } from 'lucide-react';
+import { getPharmacyAdminDashboardData, getDeadStock } from '../../services/mockApi';
+import { DollarSign, PackageX, FileCheck, AlertCircle, TrendingUp, ArrowRight, Activity, Clock, Ghost } from 'lucide-react';
 import { motion } from 'motion/react';
 
 const PharmacyDashboard: React.FC = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const [stats, setStats] = useState({ totalSalesToday: 0, lowStockItems: 0, prescriptionsFilled: 0, expiringItems: 0 });
+    const [deadStock, setDeadStock] = useState<{name: string, quantity: number, value: number}[]>([]);
 
     useEffect(() => {
         if (user?.pharmacyId) {
             getPharmacyAdminDashboardData(Number(user.pharmacyId)).then(setStats);
+            getDeadStock(Number(user.pharmacyId)).then(data => setDeadStock(data.slice(0, 3)));
         }
     }, [user]);
 
@@ -99,31 +101,58 @@ const PharmacyDashboard: React.FC = () => {
                     </div>
                 </motion.div>
 
-                <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="bg-slate-900 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden flex flex-col justify-between"
-                >
-                    <div className="absolute top-0 right-0 w-40 h-40 bg-primary/20 blur-[60px] -mr-20 -mt-20" />
-                    <div className="relative z-10 space-y-6">
-                        <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center shadow-xl shadow-primary/20">
-                            <TrendingUp className="w-6 h-6" />
-                        </div>
-                        <div className="space-y-2">
-                            <h3 className="text-2xl font-black tracking-tight uppercase">Growth Insights</h3>
-                            <p className="text-slate-400 text-sm leading-relaxed">Your pharmacy is performing <span className="text-primary font-bold">12% better</span> than last month. Consider restocking top-selling items.</p>
-                        </div>
-                    </div>
-                    
-                    <button 
-                        onClick={() => navigate('/dashboard/analytics')}
-                        className="relative z-10 w-full py-5 bg-white text-slate-900 font-bold rounded-2xl hover:bg-slate-100 transition-all flex items-center justify-center gap-3 group"
+                <div className="space-y-8">
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="bg-slate-900 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden flex flex-col justify-between"
                     >
-                        View Full Reports
-                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                    </button>
-                </motion.div>
+                        <div className="absolute top-0 right-0 w-40 h-40 bg-primary/20 blur-[60px] -mr-20 -mt-20" />
+                        <div className="relative z-10 space-y-6">
+                            <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center shadow-xl shadow-primary/20">
+                                <TrendingUp className="w-6 h-6" />
+                            </div>
+                            <div className="space-y-2">
+                                <h3 className="text-2xl font-black tracking-tight uppercase">Growth Insights</h3>
+                                <p className="text-slate-400 text-sm leading-relaxed">Your pharmacy is performing <span className="text-primary font-bold">12% better</span> than last month. Consider restocking top-selling items.</p>
+                            </div>
+                        </div>
+                        
+                        <button 
+                            onClick={() => navigate('/dashboard/analytics')}
+                            className="relative z-10 w-full mt-6 py-5 bg-white text-slate-900 font-bold rounded-2xl hover:bg-slate-100 transition-all flex items-center justify-center gap-3 group"
+                        >
+                            View Full Reports
+                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        </button>
+                    </motion.div>
+
+                    {deadStock.length > 0 && (
+                        <motion.div 
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="bg-red-50 border border-red-100 rounded-[3rem] p-10 shadow-sm relative overflow-hidden"
+                        >
+                            <div className="relative z-10 space-y-6">
+                                <div className="flex items-center gap-3 text-red-600">
+                                    <Ghost className="w-6 h-6" />
+                                    <h3 className="text-xl font-black tracking-tight uppercase">Dead Stock Alert</h3>
+                                </div>
+                                <div className="space-y-4">
+                                    {deadStock.map((item, i) => (
+                                        <div key={i} className="flex justify-between items-center border-b border-red-100 pb-2 last:border-0">
+                                            <div className="text-sm font-bold text-slate-700">{item.name}</div>
+                                            <div className="text-xs font-mono text-red-500">{item.quantity} units</div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <p className="text-xs text-slate-400 italic">Items with zero sales in the last 30 days.</p>
+                            </div>
+                        </motion.div>
+                    )}
+                </div>
             </div>
         </div>
     );

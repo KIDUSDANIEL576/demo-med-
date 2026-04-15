@@ -1,13 +1,13 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import DataTable from '../../components/DataTable';
 import BarChart from '../../components/BarChart';
-import { getPharmacySales } from '../../services/mockApi';
+import { getPharmacySales, getProfitLossData } from '../../services/mockApi';
 import { analyzeSalesWithAI } from '../../services/aiService';
 import { Sale } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
 import { usePlanAccess } from '../../hooks/usePlanAccess';
-import { Sparkles, Download, TrendingUp, Activity, Clock, ArrowRight, Plus } from 'lucide-react';
+import { Sparkles, Download, TrendingUp, Activity, Clock, ArrowRight, Plus, PieChart, Wallet, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 
@@ -16,6 +16,7 @@ const SalesReports: React.FC = () => {
     const { hasAccess, checkAccess } = usePlanAccess();
     const [sales, setSales] = useState<Sale[]>([]);
     const [timeFilter, setTimeFilter] = useState('Daily');
+    const [plData, setPlData] = useState({ totalRevenue: 0, totalCost: 0, totalProfit: 0, margin: 0 });
     
     // AI State
     const [aiInsights, setAiInsights] = useState<string | null>(null);
@@ -25,6 +26,7 @@ const SalesReports: React.FC = () => {
         checkAccess('export_reports');
         if (user?.pharmacyId) {
             getPharmacySales(Number(user.pharmacyId)).then(setSales);
+            getProfitLossData(Number(user.pharmacyId)).then(setPlData);
         }
     }, [user]);
 
@@ -67,6 +69,42 @@ const SalesReports: React.FC = () => {
     const totalRevenue = useMemo(() => {
         return filteredSales.reduce((s, x) => s + x.totalPrice, 0);
     }, [filteredSales]);
+
+    const columns = useMemo(() => [
+        { key: 'date', header: 'Timestamp' },
+        { key: 'medicineName', header: 'Medicine Sold' },
+        { key: 'quantity', header: 'Qty' },
+        { key: 'totalPrice', header: 'Revenue' },
+        { key: 'soldBy', header: 'Clerk' }
+    ], []);
+
+    const renderRow = useCallback((sale: Sale) => (
+        <>
+            <td className="px-8 py-6 whitespace-nowrap">
+                <div className="flex flex-col">
+                    <span className="text-sm font-black text-slate-900">{sale.date}</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{sale.timestamp}</span>
+                </div>
+            </td>
+            <td className="px-8 py-6 whitespace-nowrap">
+                <span className="text-sm font-bold text-slate-700">{sale.medicineName}</span>
+            </td>
+            <td className="px-8 py-6 whitespace-nowrap">
+                <span className="px-3 py-1 bg-slate-100 rounded-lg text-xs font-black text-slate-600">{sale.quantity}</span>
+            </td>
+            <td className="px-8 py-6 whitespace-nowrap">
+                <span className="text-sm font-black text-primary">${sale.totalPrice.toFixed(2)}</span>
+            </td>
+            <td className="px-8 py-6 whitespace-nowrap">
+                <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-[10px] font-black text-slate-400 uppercase">
+                        {sale.soldBy.charAt(0)}
+                    </div>
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{sale.soldBy}</span>
+                </div>
+            </td>
+        </>
+    ), []);
 
     return (
         <div className="space-y-12">
@@ -127,6 +165,61 @@ const SalesReports: React.FC = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Profit & Loss Statement */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-white border border-slate-100 rounded-[2rem] p-8 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
+                            <Wallet className="w-5 h-5" />
+                        </div>
+                        <ArrowUpRight className="w-5 h-5 text-emerald-500" />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Revenue</p>
+                        <p className="text-2xl font-black text-slate-900">${plData.totalRevenue.toLocaleString()}</p>
+                    </div>
+                </div>
+
+                <div className="bg-white border border-slate-100 rounded-[2rem] p-8 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div className="w-10 h-10 bg-red-50 text-red-600 rounded-xl flex items-center justify-center">
+                            <ArrowDownRight className="w-5 h-5" />
+                        </div>
+                        <ArrowDownRight className="w-5 h-5 text-red-500" />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cost of Goods</p>
+                        <p className="text-2xl font-black text-slate-900">${plData.totalCost.toLocaleString()}</p>
+                    </div>
+                </div>
+
+                <div className="bg-white border border-slate-100 rounded-[2rem] p-8 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div className="w-10 h-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center">
+                            <TrendingUp className="w-5 h-5" />
+                        </div>
+                        <div className="px-2 py-1 bg-primary/10 text-primary text-[8px] font-black rounded-lg">NET</div>
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gross Profit</p>
+                        <p className="text-2xl font-black text-slate-900">${plData.totalProfit.toLocaleString()}</p>
+                    </div>
+                </div>
+
+                <div className="bg-slate-900 rounded-[2rem] p-8 shadow-sm space-y-4 text-white">
+                    <div className="flex items-center justify-between">
+                        <div className="w-10 h-10 bg-white/10 text-white rounded-xl flex items-center justify-center">
+                            <PieChart className="w-5 h-5" />
+                        </div>
+                        <div className="px-2 py-1 bg-emerald-500 text-white text-[8px] font-black rounded-lg">HEALTHY</div>
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Profit Margin</p>
+                        <p className="text-2xl font-black text-white">{plData.margin.toFixed(1)}%</p>
+                    </div>
+                </div>
+            </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 bg-white border border-slate-100 rounded-[3rem] p-10 shadow-sm relative overflow-hidden">
@@ -174,41 +267,9 @@ const SalesReports: React.FC = () => {
             </div>
 
             <DataTable<Sale>
-                columns={[
-                    { key: 'date', header: 'Timestamp' },
-                    { key: 'medicineName', header: 'Medicine Sold' },
-                    { key: 'quantity', header: 'Qty' },
-                    { key: 'totalPrice', header: 'Revenue' },
-                    { key: 'soldBy', header: 'Clerk' }
-                ]}
+                columns={columns}
                 data={filteredSales}
-                renderRow={(sale) => (
-                    <>
-                        <td className="px-8 py-6 whitespace-nowrap">
-                            <div className="flex flex-col">
-                                <span className="text-sm font-black text-slate-900">{sale.date}</span>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{sale.timestamp}</span>
-                            </div>
-                        </td>
-                        <td className="px-8 py-6 whitespace-nowrap">
-                            <span className="text-sm font-bold text-slate-700">{sale.medicineName}</span>
-                        </td>
-                        <td className="px-8 py-6 whitespace-nowrap">
-                            <span className="px-3 py-1 bg-slate-100 rounded-lg text-xs font-black text-slate-600">{sale.quantity}</span>
-                        </td>
-                        <td className="px-8 py-6 whitespace-nowrap">
-                            <span className="text-sm font-black text-primary">${sale.totalPrice.toFixed(2)}</span>
-                        </td>
-                        <td className="px-8 py-6 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-[10px] font-black text-slate-400 uppercase">
-                                    {sale.soldBy.charAt(0)}
-                                </div>
-                                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">{sale.soldBy}</span>
-                            </div>
-                        </td>
-                    </>
-                )}
+                renderRow={renderRow}
             />
         </div>
     );

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import DataTable from '../../components/DataTable';
 import { updateInventoryItem, deleteInventoryItem, addInventoryItem, getPharmacies, exportData } from '../../services/mockApi';
@@ -9,6 +9,7 @@ import { usePlanAccess } from '../../hooks/usePlanAccess';
 import { Pill, Download, Upload, Plus, Pencil, Trash2, AlertTriangle, Package, Search as SearchIcon, History, Layers, ClipboardList } from 'lucide-react';
 import InventoryItemModal from '../../components/InventoryItemModal';
 import BulkImportModal from '../../components/BulkImportModal';
+import StockMovementModal from '../../components/StockMovementModal';
 import { useInventory } from '../../contexts/InventoryContext';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -18,10 +19,18 @@ const isExpiringSoon = (expiryDateStr: string) => {
     const thirtyDaysFromNow = new Date();
     thirtyDaysFromNow.setDate(today.getDate() + 30);
     const expiryDate = new Date(expiryDateStr);
-    return expiryDate > today && expiryDate <= thirtyDaysFromNow;
+    return expiryDate <= thirtyDaysFromNow;
+};
+
+const isExpired = (expiryDateStr: string) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expiryDate = new Date(expiryDateStr);
+    return expiryDate <= today;
 };
 
 const getRowClass = (item: InventoryItem) => {
+    if (isExpired(item.expiryDate)) return 'bg-red-100/80';
     if (isExpiringSoon(item.expiryDate)) return 'bg-red-50/50';
     if (item.stock < 50) return 'bg-amber-50/50';
     return '';
@@ -44,9 +53,12 @@ const InventoryManagement: React.FC = () => {
     const [isImportSelectorOpen, setIsImportSelectorOpen] = useState(false);
     const [isManualModalOpen, setIsManualModalOpen] = useState(false);
     const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+    const [isMovementModalOpen, setIsMovementModalOpen] = useState(false);
     
     const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
     const [pharmacy, setPharmacy] = useState<Pharmacy | null>(null);
+
+    const { recordMovement } = useInventory();
 
     const filter = location.state?.filter;
 
@@ -164,6 +176,22 @@ const InventoryManagement: React.FC = () => {
         setIsManualModalOpen(true);
     };
 
+    const handleOpenMovement = useCallback((item: InventoryItem) => {
+        setSelectedItem(item);
+        setIsMovementModalOpen(true);
+    }, []);
+
+    const handleSaveMovement = useCallback(async (movement: Omit<StockMovement, 'id' | 'createdAt'>) => {
+        try {
+            await recordMovement(movement);
+            setIsMovementModalOpen(false);
+            setSelectedItem(null);
+            alert("Stock movement recorded successfully!");
+        } catch (error) {
+            alert("Failed to record stock movement.");
+        }
+    }, [recordMovement]);
+
     const handleDelete = async (itemId: number) => {
         if (window.confirm('Are you sure you want to delete this item? This action cannot be undone.')) {
             const res = await deleteInventoryItem(itemId);
@@ -198,7 +226,7 @@ const InventoryManagement: React.FC = () => {
         }
     };
 
-    const stockColumns = [
+    const stockColumns = useMemo(() => [
         { key: 'medicineName', header: 'Item Name' },
         { key: 'category', header: 'Category' },
         { key: 'batchNumber', header: 'Batch' },
@@ -207,9 +235,9 @@ const InventoryManagement: React.FC = () => {
         { key: 'expiryDate', header: 'Expiry' },
         { key: 'brand', header: 'Brand' },
         { key: 'actions', header: 'Actions' },
-    ];
+    ], []);
 
-    const batchColumns = [
+    const batchColumns = useMemo(() => [
         { key: 'medicine', header: 'Medicine' },
         { key: 'batchNumber', header: 'Batch #' },
         { key: 'expiryDate', header: 'Expiry' },
@@ -217,16 +245,110 @@ const InventoryManagement: React.FC = () => {
         { key: 'purchasePrice', header: 'Cost' },
         { key: 'sellingPrice', header: 'Price' },
         { key: 'createdAt', header: 'Received' },
-    ];
+    ], []);
 
-    const movementColumns = [
+    const movementColumns = useMemo(() => [
         { key: 'createdAt', header: 'Date' },
         { key: 'medicine', header: 'Medicine' },
         { key: 'type', header: 'Type' },
         { key: 'quantity', header: 'Qty' },
         { key: 'batch', header: 'Batch' },
         { key: 'reference', header: 'Reference' },
-    ];
+    ], []);
+
+    const renderStockRow = useCallback((item: InventoryItem) => (
+        <>
+            <td className={`px-8 py-6 whitespace-nowrap ${getRowClass(item)}`}>
+                <div className="flex flex-col">
+                    <span className="text-sm font-black text-slate-900">{item.medicineName}</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{item.sku || 'NO SKU'}</span>
+                </div>
+            </td>
+            <td className={`px-8 py-6 whitespace-nowrap text-xs font-bold text-slate-500 uppercase tracking-widest ${getRowClass(item)}`}>{item.category}</td>
+            <td className={`px-8 py-6 whitespace-nowrap text-xs font-mono text-slate-400 ${getRowClass(item)}`}>{item.batchNumber || '-'}</td>
+            <td className={`px-8 py-6 whitespace-nowrap ${getRowClass(item)}`}>
+                <span className={`px-3 py-1 rounded-lg text-xs font-black ${item.stock < 50 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'}`}>
+                    {item.stock}
+                </span>
+            </td>
+            <td className={`px-8 py-6 whitespace-nowrap text-sm font-black text-slate-900 ${getRowClass(item)}`}>${item.price.toFixed(2)}</td>
+            <td className={`px-8 py-6 whitespace-nowrap ${getRowClass(item)}`}>
+                <span className={`text-xs font-bold ${isExpired(item.expiryDate) ? 'text-red-700 font-black underline' : isExpiringSoon(item.expiryDate) ? 'text-red-600' : 'text-slate-500'}`}>
+                    {item.expiryDate} {isExpired(item.expiryDate) && '(EXPIRED)'}
+                </span>
+            </td>
+            <td className={`px-8 py-6 whitespace-nowrap text-xs font-bold text-slate-500 ${getRowClass(item)}`}>{item.brand || '-'}</td>
+            <td className={`px-8 py-6 whitespace-nowrap ${getRowClass(item)}`}>
+                <div className="flex items-center gap-2">
+                    <button onClick={() => handleOpenMovement(item)} className="p-2 hover:bg-white rounded-xl text-slate-400 hover:text-amber-500 transition-all hover:shadow-md" title="Record Movement">
+                        <History className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => handleEdit(item)} className="p-2 hover:bg-white rounded-xl text-slate-400 hover:text-primary transition-all hover:shadow-md">
+                        <Pencil className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => handleDelete(item.id)} className="p-2 hover:bg-white rounded-xl text-slate-400 hover:text-red-500 transition-all hover:shadow-md">
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                </div>
+            </td>
+        </>
+    ), [getRowClass]);
+
+    const renderBatchRow = useCallback((batch: InventoryBatch) => {
+        const med = medicines.find(m => m.id === batch.medicineId);
+        return (
+            <>
+                <td className="px-8 py-6 whitespace-nowrap">
+                    <div className="flex flex-col">
+                        <span className="text-sm font-black text-slate-900">{med?.name || 'Unknown'}</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{med?.genericName}</span>
+                    </div>
+                </td>
+                <td className="px-8 py-6 whitespace-nowrap text-xs font-mono text-slate-600">{batch.batchNumber}</td>
+                <td className="px-8 py-6 whitespace-nowrap">
+                    <span className={`text-xs font-bold ${isExpiringSoon(batch.expiryDate) ? 'text-red-600' : 'text-slate-500'}`}>
+                        {batch.expiryDate}
+                    </span>
+                </td>
+                <td className="px-8 py-6 whitespace-nowrap">
+                    <span className="px-3 py-1 bg-slate-100 rounded-lg text-xs font-black text-slate-700">
+                        {batch.quantity}
+                    </span>
+                </td>
+                <td className="px-8 py-6 whitespace-nowrap text-sm font-bold text-slate-600">${batch.purchasePrice.toFixed(2)}</td>
+                <td className="px-8 py-6 whitespace-nowrap text-sm font-black text-slate-900">${batch.sellingPrice.toFixed(2)}</td>
+                <td className="px-8 py-6 whitespace-nowrap text-[10px] font-mono text-slate-400">{batch.createdAt.split('T')[0]}</td>
+            </>
+        );
+    }, [medicines]);
+
+    const renderMovementRow = useCallback((mov: StockMovement) => {
+        const med = medicines.find(m => m.id === mov.medicineId);
+        const batch = batches.find(b => b.id === mov.batchId);
+        return (
+            <>
+                <td className="px-8 py-6 whitespace-nowrap text-[10px] font-mono text-slate-400">{mov.createdAt.replace('T', ' ').split('.')[0]}</td>
+                <td className="px-8 py-6 whitespace-nowrap text-sm font-bold text-slate-900">{med?.name || 'Unknown'}</td>
+                <td className="px-8 py-6 whitespace-nowrap">
+                    <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${
+                        mov.type === StockMovementType.PURCHASE ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                        mov.type === StockMovementType.SALE ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                        mov.type === StockMovementType.ADJUSTMENT ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                        'bg-slate-50 text-slate-600 border-slate-100'
+                    }`}>
+                        {mov.type}
+                    </span>
+                </td>
+                <td className="px-8 py-6 whitespace-nowrap">
+                    <span className={`text-sm font-black ${mov.quantity < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                        {mov.quantity > 0 ? '+' : ''}{mov.quantity}
+                    </span>
+                </td>
+                <td className="px-8 py-6 whitespace-nowrap text-xs font-mono text-slate-400">{batch?.batchNumber || '-'}</td>
+                <td className="px-8 py-6 whitespace-nowrap text-xs font-bold text-slate-500">{mov.referenceId || '-'}</td>
+            </>
+        );
+    }, [medicines, batches]);
 
     if (loading) {
         return (
@@ -338,40 +460,7 @@ const InventoryManagement: React.FC = () => {
                 <DataTable<InventoryItem>
                     columns={stockColumns}
                     data={filteredInventory}
-                    renderRow={(item) => (
-                        <>
-                            <td className={`px-8 py-6 whitespace-nowrap ${getRowClass(item)}`}>
-                                <div className="flex flex-col">
-                                    <span className="text-sm font-black text-slate-900">{item.medicineName}</span>
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{item.sku || 'NO SKU'}</span>
-                                </div>
-                            </td>
-                            <td className={`px-8 py-6 whitespace-nowrap text-xs font-bold text-slate-500 uppercase tracking-widest ${getRowClass(item)}`}>{item.category}</td>
-                            <td className={`px-8 py-6 whitespace-nowrap text-xs font-mono text-slate-400 ${getRowClass(item)}`}>{item.batchNumber || '-'}</td>
-                            <td className={`px-8 py-6 whitespace-nowrap ${getRowClass(item)}`}>
-                                <span className={`px-3 py-1 rounded-lg text-xs font-black ${item.stock < 50 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'}`}>
-                                    {item.stock}
-                                </span>
-                            </td>
-                            <td className={`px-8 py-6 whitespace-nowrap text-sm font-black text-slate-900 ${getRowClass(item)}`}>${item.price.toFixed(2)}</td>
-                            <td className={`px-8 py-6 whitespace-nowrap ${getRowClass(item)}`}>
-                                <span className={`text-xs font-bold ${isExpiringSoon(item.expiryDate) ? 'text-red-600' : 'text-slate-500'}`}>
-                                    {item.expiryDate}
-                                </span>
-                            </td>
-                            <td className={`px-8 py-6 whitespace-nowrap text-xs font-bold text-slate-500 ${getRowClass(item)}`}>{item.brand || '-'}</td>
-                            <td className={`px-8 py-6 whitespace-nowrap ${getRowClass(item)}`}>
-                                <div className="flex items-center gap-2">
-                                    <button onClick={() => handleEdit(item)} className="p-2 hover:bg-white rounded-xl text-slate-400 hover:text-primary transition-all hover:shadow-md">
-                                        <Pencil className="w-4 h-4" />
-                                    </button>
-                                    <button onClick={() => handleDelete(item.id)} className="p-2 hover:bg-white rounded-xl text-slate-400 hover:text-red-500 transition-all hover:shadow-md">
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            </td>
-                        </>
-                    )}
+                    renderRow={renderStockRow}
                 />
             )}
 
@@ -379,33 +468,7 @@ const InventoryManagement: React.FC = () => {
                 <DataTable<InventoryBatch>
                     columns={batchColumns}
                     data={filteredBatches}
-                    renderRow={(batch) => {
-                        const med = medicines.find(m => m.id === batch.medicineId);
-                        return (
-                            <>
-                                <td className="px-8 py-6 whitespace-nowrap">
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-black text-slate-900">{med?.name || 'Unknown'}</span>
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{med?.genericName}</span>
-                                    </div>
-                                </td>
-                                <td className="px-8 py-6 whitespace-nowrap text-xs font-mono text-slate-600">{batch.batchNumber}</td>
-                                <td className="px-8 py-6 whitespace-nowrap">
-                                    <span className={`text-xs font-bold ${isExpiringSoon(batch.expiryDate) ? 'text-red-600' : 'text-slate-500'}`}>
-                                        {batch.expiryDate}
-                                    </span>
-                                </td>
-                                <td className="px-8 py-6 whitespace-nowrap">
-                                    <span className="px-3 py-1 bg-slate-100 rounded-lg text-xs font-black text-slate-700">
-                                        {batch.quantity}
-                                    </span>
-                                </td>
-                                <td className="px-8 py-6 whitespace-nowrap text-sm font-bold text-slate-600">${batch.purchasePrice.toFixed(2)}</td>
-                                <td className="px-8 py-6 whitespace-nowrap text-sm font-black text-slate-900">${batch.sellingPrice.toFixed(2)}</td>
-                                <td className="px-8 py-6 whitespace-nowrap text-[10px] font-mono text-slate-400">{batch.createdAt.split('T')[0]}</td>
-                            </>
-                        );
-                    }}
+                    renderRow={renderBatchRow}
                 />
             )}
 
@@ -413,33 +476,7 @@ const InventoryManagement: React.FC = () => {
                 <DataTable<StockMovement>
                     columns={movementColumns}
                     data={filteredMovements}
-                    renderRow={(mov) => {
-                        const med = medicines.find(m => m.id === mov.medicineId);
-                        const batch = batches.find(b => b.id === mov.batchId);
-                        return (
-                            <>
-                                <td className="px-8 py-6 whitespace-nowrap text-[10px] font-mono text-slate-400">{mov.createdAt.replace('T', ' ').split('.')[0]}</td>
-                                <td className="px-8 py-6 whitespace-nowrap text-sm font-bold text-slate-900">{med?.name || 'Unknown'}</td>
-                                <td className="px-8 py-6 whitespace-nowrap">
-                                    <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${
-                                        mov.type === StockMovementType.PURCHASE ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                        mov.type === StockMovementType.SALE ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                                        mov.type === StockMovementType.ADJUSTMENT ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                                        'bg-slate-50 text-slate-600 border-slate-100'
-                                    }`}>
-                                        {mov.type}
-                                    </span>
-                                </td>
-                                <td className="px-8 py-6 whitespace-nowrap">
-                                    <span className={`text-sm font-black ${mov.quantity < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                                        {mov.quantity > 0 ? '+' : ''}{mov.quantity}
-                                    </span>
-                                </td>
-                                <td className="px-8 py-6 whitespace-nowrap text-xs font-mono text-slate-400">{batch?.batchNumber || '-'}</td>
-                                <td className="px-8 py-6 whitespace-nowrap text-xs font-bold text-slate-500">{mov.referenceId || '-'}</td>
-                            </>
-                        );
-                    }}
+                    renderRow={renderMovementRow}
                 />
             )}
 
@@ -535,6 +572,18 @@ const InventoryManagement: React.FC = () => {
                         fetchInventory();
                         alert("Bulk import successful!");
                     }}
+                />
+            )}
+
+            {/* Stock Movement Modal */}
+            {isMovementModalOpen && selectedItem && (
+                <StockMovementModal
+                    item={selectedItem}
+                    onClose={() => {
+                        setIsMovementModalOpen(false);
+                        setSelectedItem(null);
+                    }}
+                    onSave={handleSaveMovement}
                 />
             )}
         </div>

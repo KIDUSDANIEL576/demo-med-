@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import DataTable from '../../components/DataTable';
 import { getStaff, addStaff, updateStaff } from '../../services/mockApi';
 import { User, UserRole } from '../../types';
@@ -82,13 +82,40 @@ const StaffManagement: React.FC = () => {
         }
     };
 
-    const columns = [
+    const columns = useMemo(() => [
         { key: 'name', header: 'Staff Member' },
         { key: 'email', header: 'Email' },
         { key: 'role', header: 'Role' },
         { key: 'lastLogin', header: 'Last Access' },
         { key: 'actions', header: 'Actions' },
-    ];
+    ], []);
+
+    const renderRow = useCallback((u: User) => (
+        <>
+            <td className="px-8 py-6 whitespace-nowrap">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 font-black uppercase">
+                        {u.name.charAt(0)}
+                    </div>
+                    <span className="text-sm font-black text-slate-900">{u.name}</span>
+                </div>
+            </td>
+            <td className="px-8 py-6 whitespace-nowrap text-sm font-medium text-slate-500">{u.email}</td>
+            <td className="px-8 py-6 whitespace-nowrap">
+                <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${
+                    u.role === UserRole.PHARMACIST ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-sky-50 text-sky-600 border border-sky-100'
+                }`}>
+                    {u.role}
+                </span>
+            </td>
+             <td className="px-8 py-6 whitespace-nowrap text-xs font-mono text-slate-400">{u.lastLogin || 'Never'}</td>
+             <td className="px-8 py-6 whitespace-nowrap">
+                <button onClick={() => handleOpenEdit(u)} className="p-2 hover:bg-white rounded-xl text-slate-400 hover:text-primary transition-all hover:shadow-md">
+                    <Pencil className="w-4 h-4" />
+                </button>
+            </td>
+        </>
+    ), []);
 
     return (
         <div className="space-y-10">
@@ -147,32 +174,7 @@ const StaffManagement: React.FC = () => {
             <DataTable<User>
                 columns={columns}
                 data={staff}
-                renderRow={(u) => (
-                    <>
-                        <td className="px-8 py-6 whitespace-nowrap">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 font-black uppercase">
-                                    {u.name.charAt(0)}
-                                </div>
-                                <span className="text-sm font-black text-slate-900">{u.name}</span>
-                            </div>
-                        </td>
-                        <td className="px-8 py-6 whitespace-nowrap text-sm font-medium text-slate-500">{u.email}</td>
-                        <td className="px-8 py-6 whitespace-nowrap">
-                            <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${
-                                u.role === UserRole.PHARMACIST ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-sky-50 text-sky-600 border border-sky-100'
-                            }`}>
-                                {u.role}
-                            </span>
-                        </td>
-                         <td className="px-8 py-6 whitespace-nowrap text-xs font-mono text-slate-400">{u.lastLogin || 'Never'}</td>
-                         <td className="px-8 py-6 whitespace-nowrap">
-                            <button onClick={() => handleOpenEdit(u)} className="p-2 hover:bg-white rounded-xl text-slate-400 hover:text-primary transition-all hover:shadow-md">
-                                <Pencil className="w-4 h-4" />
-                            </button>
-                        </td>
-                    </>
-                )}
+                renderRow={renderRow}
             />
 
             <AnimatePresence>

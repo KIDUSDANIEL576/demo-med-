@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { useAuth } from '../hooks/useAuth';
@@ -9,6 +10,7 @@ import { motion, AnimatePresence } from 'motion/react';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
+  const location = useLocation();
   const [isFeedbackModalOpen, setFeedbackModalOpen] = useState(false);
 
   const showFeedbackButton = user && (user.role === UserRole.PHARMACY_ADMIN || user.role === UserRole.DOCTOR);
@@ -18,19 +20,26 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-[#FDFDFD] relative">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-[#FDFDFD] relative flex flex-col">
           <AnimatePresence mode="wait">
             <motion.div
-              key={window.location.pathname}
+              key={location.pathname}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.3, ease: "easeOut" }}
-              className="p-8 md:p-12 lg:p-16 max-w-[1600px] mx-auto w-full"
+              className="p-8 md:p-12 lg:p-16 max-w-[1600px] mx-auto w-full flex-grow"
             >
               {children}
             </motion.div>
           </AnimatePresence>
+          
+          <footer className="p-8 border-t border-slate-50 text-center">
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">medintelicare clinical intelligence</span>
+              <span className="text-[8px] font-bold text-slate-200 uppercase tracking-widest">© {new Date().getFullYear()} All Rights Reserved</span>
+            </div>
+          </footer>
         </main>
       </div>
       

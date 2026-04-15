@@ -1,5 +1,5 @@
 
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useMemo, useCallback } from 'react';
 import { User, Patient } from '../types';
 import { mockLogin, loginPatient, verifyPatientOTP } from '../services/mockApi';
 
@@ -7,7 +7,7 @@ interface AuthContextType {
   // Staff Auth
   user: User | null;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
-  login: (email: string, password: string) => Promise<User>; // Updated return type
+  login: (email: string, password: string) => Promise<User>; 
   logout: () => void;
   
   // Patient Auth (Isolated)
@@ -33,40 +33,42 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   });
 
   // --- STAFF HANDLERS ---
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     const loggedInUser = await mockLogin(email, password);
     setUser(loggedInUser);
     sessionStorage.setItem('user_session', JSON.stringify(loggedInUser));
-    return loggedInUser; // Return the user object
-  };
+    return loggedInUser; 
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null);
     sessionStorage.removeItem('user_session');
-  };
+  }, []);
 
   // --- PATIENT HANDLERS ---
-  const initiatePatientLogin = async (phone: string) => {
+  const initiatePatientLogin = useCallback(async (phone: string) => {
     await loginPatient(phone);
-  };
+  }, []);
 
-  const verifyPatientSession = async (phone: string, otp: string) => {
+  const verifyPatientSession = useCallback(async (phone: string, otp: string) => {
     const authenticatedPatient = await verifyPatientOTP(phone, otp);
     setPatient(authenticatedPatient);
     sessionStorage.setItem('patient_session', JSON.stringify(authenticatedPatient));
-  };
+  }, []);
 
-  const patientLogout = () => {
+  const patientLogout = useCallback(() => {
     setPatient(null);
     sessionStorage.removeItem('patient_session');
-  };
+  }, []);
+
+  const value = useMemo(() => ({ 
+    user, setUser,
+    login, logout, 
+    patient, initiatePatientLogin, verifyPatientSession, patientLogout 
+  }), [user, patient, login, logout, initiatePatientLogin, verifyPatientSession, patientLogout]);
 
   return (
-    <AuthContext.Provider value={{ 
-      user, setUser,
-      login, logout, 
-      patient, initiatePatientLogin, verifyPatientSession, patientLogout 
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

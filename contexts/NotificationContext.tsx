@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback, useMemo } from 'react';
 import { MICNotification } from '../types';
 import { getNotifications, addNotification as apiAddNotification } from '../services/mockApi';
 
@@ -21,13 +21,15 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
         fetchNotices();
     }, [fetchNotices]);
 
-    const addNotice = async (title: string, message: string) => {
+    const addNotice = useCallback(async (title: string, message: string) => {
         await apiAddNotification({ title, message });
         fetchNotices(); // Re-fetch to get the latest list
-    };
+    }, [fetchNotices]);
+    
+    const value = useMemo(() => ({ notifications, addNotice, fetchNotices }), [notifications, addNotice, fetchNotices]);
     
     return (
-        <NotificationContext.Provider value={{ notifications, addNotice, fetchNotices }}>
+        <NotificationContext.Provider value={value}>
             {children}
         </NotificationContext.Provider>
     );
