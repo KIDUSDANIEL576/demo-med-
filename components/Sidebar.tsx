@@ -46,7 +46,7 @@ const Sidebar = () => {
     const { logoUrl } = useTheme();
     const location = useLocation();
     const [pharmacy, setPharmacy] = useState<Pharmacy | null>(null);
-    const [allowedNav, setAllowedNav] = useState<any[]>([]);
+    const [allowedNav, setAllowedNav] = useState<any[]>(() => user ? getNavLinks(user.role) : []);
     const [stats, setStats] = useState<Record<string, number>>({});
 
     useEffect(() => {

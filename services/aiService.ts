@@ -1,7 +1,7 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
+const getAI = () => new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 /**
  * AI for Doctors: Suggests a structured prescription based on patient context/symptoms.

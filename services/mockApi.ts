@@ -492,7 +492,10 @@ export const getPharmacySales = async (id: number) => Promise.resolve(sales.filt
 export const getAllSales = async () => Promise.resolve(sales);
 export const getUpgradeRequests = async () => Promise.resolve([...upgradeRequests]);
 export const getFeatureFlags = async () => Promise.resolve([]);
-export const getPlatformFeature = async (key: string) => Promise.resolve(true);
+export const getPlatformFeature = async (key: string) => {
+    if (key === 'patient_platform') return safetySettings.platformEnabled;
+    return Promise.resolve(true);
+};
 export const getSMSLogs = async () => Promise.resolve([]);
 
 export const approveUpgrade = async (id: string, note?: string) => {

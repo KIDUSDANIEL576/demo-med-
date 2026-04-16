@@ -27,14 +27,25 @@ const ProtectedRoute: React.FC<{ children: React.ReactElement; roles: UserRole[]
 // --- GLOBAL TOGGLE ENFORCEMENT ---
 const PatientPlatformGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [status, setStatus] = useState<'loading' | 'enabled' | 'disabled'>('loading');
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     useEffect(() => {
+        let isMounted = true;
         getPlatformFeature('patient_platform').then(enabled => {
-            setStatus(enabled ? 'enabled' : 'disabled');
+            if (isMounted) {
+                setStatus(enabled ? 'enabled' : 'disabled');
+                setIsInitialLoad(false);
+            }
         });
+        return () => { isMounted = false; };
     }, []);
 
-    if (status === 'loading') return null;
+    // Show nothing only on the very first load to prevent layout shift
+    if (status === 'loading' && isInitialLoad) return (
+        <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        </div>
+    );
     
     if (status === 'disabled') {
         return (
