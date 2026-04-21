@@ -5,29 +5,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import { UserRole } from '../types';
 import { useNotification } from '../contexts/NotificationContext';
-import { Bell, Settings, LogOut, Search, User, ChevronDown } from 'lucide-react';
+import { Bell, Settings, LogOut, Search, User, ChevronDown, CheckCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-
-const getReadNotices = (): Set<string> => {
-    const read = sessionStorage.getItem('read_notices');
-    if (!read) return new Set();
-
-    try {
-        const data = JSON.parse(read);
-        if (Array.isArray(data)) {
-            return new Set(data);
-        }
-        throw new Error("Stored 'read_notices' data is not an array.");
-    } catch (error) {
-        console.error("Failed to parse read notices from session storage, clearing it:", error);
-        sessionStorage.removeItem('read_notices'); 
-        return new Set();
-    }
-};
-
-const setReadNotices = (readSet: Set<string>) => {
-    sessionStorage.setItem('read_notices', JSON.stringify(Array.from(readSet)));
-};
 
 const Header = () => {
   const { user, logout } = useAuth();
@@ -35,14 +14,9 @@ const Header = () => {
   const navigate = useNavigate();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const { notifications = [] } = useNotification();
-  const [readNotices, setRead] = useState<Set<string>>(getReadNotices);
+  const { notifications = [], unreadCount, readNoticeIds, markAllRead } = useNotification();
 
   const safeNotifications = notifications || [];
-
-  const unreadCount = useMemo(() => {
-    return safeNotifications.filter(n => !readNotices.has(n.id)).length;
-  }, [safeNotifications, readNotices]);
 
   const handleLogout = () => {
     logout();
@@ -61,11 +35,6 @@ const Header = () => {
   
   const handleOpenNotifications = () => {
     setNotificationsOpen(!notificationsOpen);
-    if (!notificationsOpen && unreadCount > 0) {
-        const allNoticeIds = new Set<string>(safeNotifications.map(n => n.id));
-        setRead(allNoticeIds);
-        setReadNotices(allNoticeIds);
-    }
   }
 
   if (!user) return null;
@@ -103,13 +72,30 @@ const Header = () => {
                 className="absolute right-0 mt-4 w-96 bg-white rounded-[2rem] shadow-2xl z-50 border border-slate-100 overflow-hidden"
               >
                 <div className="p-6 border-b border-slate-50 flex items-center justify-between">
-                  <h3 className="font-black text-slate-900 uppercase tracking-tighter">Notifications</h3>
-                  <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-1 rounded-lg uppercase tracking-widest">{unreadCount} New</span>
+                  <div className="flex flex-col">
+                    <h3 className="font-black text-slate-900 uppercase tracking-tighter">Notifications</h3>
+                    <span className="text-[10px] font-bold text-primary uppercase tracking-widest mt-1">{unreadCount} New</span>
+                  </div>
+                  {unreadCount > 0 && (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        markAllRead();
+                      }}
+                      className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 hover:text-primary transition-colors py-1 px-3 rounded-lg hover:bg-slate-50 uppercase tracking-widest"
+                    >
+                      <CheckCheck className="w-3.5 h-3.5" />
+                      Mark all as read
+                    </button>
+                  )}
                 </div>
                 <div className="max-h-[400px] overflow-y-auto p-2">
                   {safeNotifications.length > 0 ? safeNotifications.slice().reverse().map(notice => (
-                    <div key={notice.id} className="p-4 hover:bg-slate-50 rounded-2xl transition-colors group">
-                      <p className="font-bold text-sm text-slate-800 group-hover:text-primary transition-colors">{notice.title}</p>
+                    <div key={notice.id} className={`p-4 hover:bg-slate-50 rounded-2xl transition-colors group relative ${!readNoticeIds.has(notice.id) ? 'bg-primary/5' : ''}`}>
+                      {!readNoticeIds.has(notice.id) && (
+                        <span className="absolute left-2 top-6 w-1 h-8 bg-primary rounded-full" />
+                      )}
+                      <p className={`font-bold text-sm transition-colors ${!readNoticeIds.has(notice.id) ? 'text-primary' : 'text-slate-800'}`}>{notice.title}</p>
                       <p className="text-xs text-slate-500 mt-1 leading-relaxed">{notice.message}</p>
                       <p className="text-[10px] font-bold text-slate-300 uppercase mt-3 tracking-widest">{new Date(notice.createdAt).toLocaleDateString()}</p>
                     </div>

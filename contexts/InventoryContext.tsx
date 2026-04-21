@@ -10,7 +10,8 @@ import {
     getStockMovements,
     addMedicine as apiAddMedicine,
     addInventoryBatch as apiAddBatch,
-    recordStockMovement as apiRecordMovement
+    recordStockMovement as apiRecordMovement,
+    rpc_dispense_fefo as apiDispenseFEFO
 } from '../services/mockApi';
 import { useAuth } from './AuthContext';
 
@@ -29,6 +30,7 @@ interface InventoryContextType {
   recordMovement: (m: Omit<StockMovement, 'id' | 'createdAt'>) => Promise<StockMovement>;
   processSale: (prescription: Prescription) => Promise<{ success: boolean; message: string; }>;
   processManualSale: (items: { itemId: number, quantity: number }[], soldBy: string) => Promise<{ success: boolean; message: string; }>;
+  dispenseFEFO: (medicineId: string, quantity: number, soldBy: string) => Promise<{ success: boolean; message: string; }>;
 }
 
 export const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
@@ -122,16 +124,31 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
         return result;
     }, [user?.pharmacyId, fetchInventory, fetchBatches, fetchMovements]);
 
+    const dispenseFEFO = useCallback(async (medicineId: string, quantity: number, soldBy: string): Promise<{ success: boolean; message: string; }> => {
+        if (!user?.pharmacyId) {
+            return { success: false, message: 'User not associated with a pharmacy.' };
+        }
+        try {
+            await apiDispenseFEFO(Number(user.pharmacyId), medicineId, quantity, soldBy);
+            fetchInventory();
+            fetchBatches();
+            fetchMovements();
+            return { success: true, message: 'FEFO dispensing completed successfully.' };
+        } catch (error: any) {
+            return { success: false, message: error.message || 'FEFO dispensing failed.' };
+        }
+    }, [user?.pharmacyId, fetchInventory, fetchBatches, fetchMovements]);
+
     const value = useMemo(() => ({ 
         inventory, medicines, batches, movements, loading, 
         fetchInventory, fetchMedicines, fetchBatches, fetchMovements,
         addMedicine, addBatch, recordMovement,
-        processSale, processManualSale 
+        processSale, processManualSale, dispenseFEFO
     }), [
         inventory, medicines, batches, movements, loading, 
         fetchInventory, fetchMedicines, fetchBatches, fetchMovements,
         addMedicine, addBatch, recordMovement,
-        processSale, processManualSale
+        processSale, processManualSale, dispenseFEFO
     ]);
 
     return (

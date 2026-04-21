@@ -1217,3 +1217,73 @@ export const logSearch = async (medicineName: string, region: string = 'Unknown'
     safetySettings.currentDailyCount++;
     return Promise.resolve();
 };
+
+/**
+ * Backend simulation for FEFO dispensing.
+ * Automatically selects batches based on First-Expired-First-Out.
+ */
+export const rpc_dispense_fefo = async (
+    pharmacyId: number,
+    medicineId: string,
+    requestQuantity: number,
+    soldBy: string
+): Promise<{ batchId: string, quantityDispensed: number }[]> => {
+    // 1. Get relevant batches
+    const pharmacyBatches = inventoryBatches
+        .filter(b => 
+            Number(b.organizationId) === pharmacyId && 
+            b.medicineId === medicineId && 
+            b.quantity > 0 && 
+            !b.isRecalled
+        )
+        // 2. Sort by expiry date (FEFO)
+        .sort((a, b) => new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime());
+
+    let remainingQty = requestQuantity;
+    const results: { batchId: string, quantityDispensed: number }[] = [];
+    const dateStr = new Date().toISOString().split('T')[0];
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    for (const batch of pharmacyBatches) {
+        if (remainingQty <= 0) break;
+
+        const dispenseInStep = Math.min(batch.quantity, remainingQty);
+        
+        // Update mock data
+        batch.quantity -= dispenseInStep;
+        
+        const medicine = medicines.find(m => m.id === batch.medicineId);
+
+        // Record sale for reporting (matching the structure in processManualSale)
+        sales.push({
+            id: sales.length + 1,
+            pharmacyId: Number(batch.organizationId),
+            medicineName: medicine?.name || 'Unknown',
+            quantity: dispenseInStep,
+            totalPrice: batch.sellingPrice * dispenseInStep,
+            profitMargin: (batch.sellingPrice - batch.purchasePrice) * dispenseInStep,
+            soldBy: soldBy,
+            date: dateStr,
+            timestamp: timeStr
+        });
+
+        // Record movement
+        await recordStockMovement({
+            organizationId: pharmacyId,
+            medicineId: medicineId,
+            batchId: batch.id,
+            type: StockMovementType.SALE,
+            quantity: dispenseInStep,
+            referenceId: `FEFO-AUTO-${Date.now()}`
+        });
+
+        remainingQty -= dispenseInStep;
+        results.push({ batchId: batch.id, quantityDispensed: dispenseInStep });
+    }
+
+    if (remainingQty > 0) {
+        throw new Error(`Insufficient stock for FEFO dispense. Medicine: ${medicineId}, Requested: ${requestQuantity}, Unfulfilled: ${remainingQty}`);
+    }
+
+    return Promise.resolve(results);
+};
